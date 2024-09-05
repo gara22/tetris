@@ -2,7 +2,6 @@ package entities
 
 import (
 	"fmt"
-	"math/rand"
 )
 
 type Tile struct {
@@ -31,15 +30,21 @@ func (t *Tile) Reset() {
 	t = &Tile{Row: t.Row, Column: t.Column, ColorValue: 0, Display: "0"}
 }
 
-func GenerateRandomShape() Shape {
-	shapes := []string{"I", "O", "T", "L1", "L2", "Z1", "Z2"}
-	rand := rand.Intn(len(shapes))
-	fmt.Println(rand)
-	shape := NewShape(shapes[rand])
-	return shape
+func (t Tile) Print() {
+	color := getTileColor(t.Display, t.Color)
+	// fmt.Printf("%s", color)
+	fmt.Printf("%s%s%s", color, t.Display, Reset)
 }
 
-func NewShape(kind string) Shape {
+// func GenerateRandomShape() Shape {
+// 	shapes := []string{"I", "O", "T", "L1", "L2", "Z1", "Z2"}
+// 	rand := rand.Intn(len(shapes))
+// 	fmt.Println(rand)
+// 	shape := NewShape(shapes[rand])
+// 	return shape
+// }
+
+func NewShape(kind string, color string) Shape {
 	shape := Shape{}
 	trueval := true
 	switch kind {
@@ -47,7 +52,7 @@ func NewShape(kind string) Shape {
 		// X R X X
 		// 0 0 0 0
 		shape.Tiles = [4]Tile{
-			{Row: 0, Column: 5, Display: "I"}, {Row: 1, Column: 5, Display: "I", IsFixed: &trueval}, {Row: 2, Column: 5, Display: "I"}, {Row: 3, Column: 5, Display: "I"},
+			{Row: 1, Column: 3, Display: "I", Color: color}, {Row: 1, Column: 4, Display: "I", IsFixed: &trueval, Color: color}, {Row: 1, Column: 5, Display: "I", Color: color}, {Row: 1, Column: 6, Display: "I", Color: color},
 		}
 		// case "O":
 		// 	// X X 0 0
@@ -117,14 +122,35 @@ func (s Shape) GetFixed() Tile {
 	return Tile{}
 }
 
-func (s Shape) GetLowestPoint() Tile {
-	lowest := s.Tiles[0]
-	for i := 0; i < 4; i++ {
-		if s.Tiles[i].Row > lowest.Row {
-			lowest = s.Tiles[i]
+func (s *Shape) MostOuterTiles(direction string) []Tile {
+	mostOuters := []Tile{s.Tiles[0]}
+	for i := 1; i < 4; i++ {
+		switch direction {
+		case "left":
+			if s.Tiles[i].Column < mostOuters[0].Column {
+				mostOuters = []Tile{s.Tiles[i]}
+			}
+			if s.Tiles[i].Column == mostOuters[0].Column {
+				mostOuters = append(mostOuters, s.Tiles[i])
+			}
+		case "right":
+
+			if s.Tiles[i].Column > mostOuters[0].Column {
+				mostOuters = []Tile{s.Tiles[i]}
+			}
+			if s.Tiles[i].Column == mostOuters[0].Column {
+				mostOuters = append(mostOuters, s.Tiles[i])
+			}
+		case "down":
+			if s.Tiles[i].Row > mostOuters[0].Row {
+				mostOuters = []Tile{s.Tiles[i]}
+			}
+			if s.Tiles[i].Row == mostOuters[0].Row {
+				mostOuters = append(mostOuters, s.Tiles[i])
+			}
 		}
 	}
-	return lowest
+	return mostOuters
 }
 
 func (s *Shape) Block() {
@@ -150,17 +176,22 @@ func (s Shape) Rotate() {
 	}
 }
 
-func (s Shape) IsColliding(grid Grid) bool {
+func (s Shape) IsColliding(grid Grid, direction string) bool {
 
 	// Check if the tile is out of grid bounds
-	return grid.Tiles[s.GetLowestPoint().GetCoordinates()].Blocked
-
+	for _, t := range s.MostOuterTiles(direction) {
+		if grid.Tiles[t.GetCoordinates()].Blocked {
+			return true
+		}
+	}
+	return false
 }
 
 // 11 * 21 default
 type Grid struct {
 	Width, Height int
 	Tiles         map[string]Tile
+	ColorCounter  int
 }
 
 func NewGrid(width, height int) Grid {
@@ -192,7 +223,9 @@ func (g Grid) Print() {
 	for i := 0; i < g.Height; i++ {
 		for j := 0; j < g.Width; j++ {
 			// fmt.Printf(" %d-%d",  g.Tiles[j][i].X, g.Tiles[j][i].Y)
-			fmt.Printf(" %s", g.Tiles[GetCoordinates(i, j)].Display)
+			// fmt.Printf(" %s", g.Tiles[GetCoordinates(i, j)].Display)
+			g.Tiles[GetCoordinates(i, j)].Print()
+			//
 		}
 		fmt.Printf("\n")
 	}
@@ -237,4 +270,28 @@ func (g *Grid) RenderShapes(shapes []Shape) {
 
 func GetCoordinates(x, y int) string {
 	return fmt.Sprintf("%d-%d", x, y)
+}
+
+var Cyan = "\033[36m"
+var Green = "\033[32m"
+var Blue = "\033[34m"
+var Red = "\033[31m"
+var Yellow = "\033[33m"
+var Magenta = "\033[35m"
+var Orange = "\033[91m"
+var Gray = "\033[37m"
+var White = "\033[97m"
+var Black = "\033[30m"
+var Reset = "\033[0m"
+
+func getTileColor(tile string, color string) string {
+	switch tile {
+	case "I":
+		return color
+	case "0":
+		return Black
+	case "X":
+		return White
+	}
+	return ""
 }

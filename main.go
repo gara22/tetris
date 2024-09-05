@@ -2,31 +2,22 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/eiannone/keyboard"
-	"github.com/gara22/tetris/entities"
-)
-
-const (
-	HEIGHT = 21
-	WIDTH  = 11
+	"github.com/gara22/tetris/game"
 )
 
 func main() {
-	grid := entities.NewGrid(WIDTH, HEIGHT)
 
-	// // entities.GenerateRandomShape()
+	tetrisGame := game.NewTetrisGame()
+	tetrisGame.StartGame()
 
-	iShape := entities.NewShape("I")
-
-	shapes := []entities.Shape{iShape}
-	grid.RenderShapes(shapes)
-	grid.Print()
-
-	activeIndex := 0
+	tetrisGame.Grid.RenderShapes(tetrisGame.Shapes)
+	tetrisGame.Grid.Print()
 
 	done := make(chan bool)
 	userInput := make(chan string)
@@ -61,47 +52,36 @@ func main() {
 			}
 		}
 	}()
-	// Main goroutine to handle shape movement
+	// // Main goroutine to handle shape movement
 	go func() {
 		for {
-			fmt.Println("shapes", len(shapes))
+			// fmt.Println("shapes", len(shapes))
 			select {
 			case <-done:
 				return
 			case input := <-userInput:
-				var newShape entities.Shape
-				switch input {
-				case "left":
-					newShape = shapes[activeIndex].Move("left")
-				case "right":
+				tetrisGame.Move(game.MoveParams{Direction: input})
 
-					newShape = shapes[activeIndex].Move("right")
-				case "down":
-					newShape = shapes[activeIndex].Move("down")
-					if newShape.IsColliding(grid) {
-						fmt.Println("Shape is stuck")
-						shapes[activeIndex].Block()
-						activeIndex++
-						// TODO: generate a random shape here and append it to the shapes slice
-						shapes = append(shapes, entities.NewShape("I"))
-						continue
-					}
-				default:
-					fmt.Println("Invalid input")
-				}
-				// check if new shape is colliding with the grid
-				if newShape.IsColliding(grid) {
-					fmt.Println("Shape is colliding")
-					continue
-				}
-
-				shapes[activeIndex] = newShape
-
-				grid.RenderShapes(shapes)
-				grid.Print()
 			}
 		}
 	}()
+
+	// add a http listener for user input
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// fmt.Fprintf(w, "Hello, World!")
+
+		// userInput <- r.RequestURI
+		// //get direction from uri param
+		direction := r.URL.Query().Get("direction")
+		fmt.Println("direction", direction)
+		userInput <- direction
+		w.Write([]byte(direction))
+		// w.WriteHeader(http.StatusOK)
+	})
+
+	if err := http.ListenAndServe("localhost:8080", nil); err != nil {
+		fmt.Println("Error starting server:", err)
+	}
 
 	// Wait for interrupt signal to gracefully shutdown the application
 	sigChan := make(chan os.Signal, 1)
