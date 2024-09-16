@@ -2,22 +2,28 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/eiannone/keyboard"
 	"github.com/gara22/tetris/game"
+	handler "github.com/gara22/tetris/http"
+	socket "github.com/gara22/tetris/websocket"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
 
-	tetrisGame := game.NewTetrisGame()
+	hub := socket.NewHub()
+	go hub.Run()
+	tetrisGame := game.NewTetrisGame(*hub)
 	tetrisGame.StartGame()
 
 	tetrisGame.Grid.RenderShapes(tetrisGame.Shapes)
-	tetrisGame.Grid.Print()
+	// tetrisGame.Grid.Print()
 
 	done := make(chan bool)
 	userInput := make(chan string)
@@ -66,22 +72,25 @@ func main() {
 		}
 	}()
 
-	// add a http listener for user input
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// fmt.Fprintf(w, "Hello, World!")
+	// allow cors for localhost:3000
 
-		// userInput <- r.RequestURI
-		// //get direction from uri param
-		direction := r.URL.Query().Get("direction")
-		fmt.Println("direction", direction)
-		userInput <- direction
-		w.Write([]byte(direction))
-		// w.WriteHeader(http.StatusOK)
+	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},                   // Allow localhost for front-end development (adjust port if needed)
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Allowed HTTP methods
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
+	handler := handler.NewHTTPHandler(&tetrisGame)
+	router.POST("/move", handler.Move)
+	router.GET("/state", handler.GetState)
+	router.GET("/ws", func(c *gin.Context) {
+		socket.ServeWs(hub, c.Writer, c.Request)
 	})
-
-	if err := http.ListenAndServe("localhost:8080", nil); err != nil {
-		fmt.Println("Error starting server:", err)
-	}
+	router.Run(":8080")
 
 	// Wait for interrupt signal to gracefully shutdown the application
 	sigChan := make(chan os.Signal, 1)

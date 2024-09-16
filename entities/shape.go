@@ -5,12 +5,13 @@ import (
 )
 
 type Tile struct {
-	Row, Column int
-	ColorValue  int
-	Color       string
-	Display     string
-	Blocked     bool
-	IsFixed     *bool
+	Row        int `json:"column"`
+	Column     int `json:"row"`
+	ColorValue int
+	Color      string `json:"color"`
+	Display    string `json:"display"`
+	Blocked    bool
+	IsFixed    *bool
 }
 
 type Shape struct {
@@ -190,8 +191,8 @@ func (s Shape) IsColliding(grid Grid, direction string) bool {
 // 11 * 21 default
 type Grid struct {
 	Width, Height int
-	Tiles         map[string]Tile
-	ColorCounter  int
+	Tiles         map[string]Tile `json:"tiles" mapstructure:"tiles"`
+	ColorCounter  int             `json:"colorCounter"`
 }
 
 func NewGrid(width, height int) Grid {
