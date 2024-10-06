@@ -87,27 +87,23 @@ func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
 		shapeKind := entities.GenerateRandomShape()
 		t.ActiveShape = entities.NewShape(shapeKind)
 		// TODO: do we need to render here?
+		t.checkForFullRows()
 		t.Grid.RenderShape(t.ActiveShape)
 		spew.Dump(t.ActiveShape)
+		t.Grid.Print()
 		return t, nil
 		// spew.Dump(t.Grid)
 	}
 	if err != nil {
 		return t, err
 	}
-	// spew.Dump(t.ActiveShape)
 
-	// if newShape.IsColliding(t.Grid, params.Direction) {
-	// 	fmt.Println("Shape is colliding")
-	// 	// spew.Dump(t.Grid)
-	// 	return t, fmt.Errorf("Shape is colliding")
-	// }
-
+	t.checkForFullRows()
 	t.Grid.RenderShape(newShape)
 	t.ActiveShape = newShape
 	fmt.Println("assigning new shape")
 
-	// t.Grid.Print()
+	t.Grid.Print()
 	return t, nil
 }
 
@@ -132,6 +128,15 @@ func (t TetrisGame) calculateNewShape(params MoveParams, activeShape entities.Sh
 		// }
 	default:
 		return entities.Shape{}, fmt.Errorf("Invalid input")
+	}
+}
+
+// TODO: double check later if it works if multiple rows are full
+func (t *TetrisGame) checkForFullRows() {
+	for row := 0; row < t.Grid.Height-1; row++ {
+		if t.Grid.IsRowFull(row) {
+			t.Grid.ClearRow(row)
+		}
 	}
 }
 

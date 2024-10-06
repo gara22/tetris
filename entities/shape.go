@@ -2,6 +2,7 @@ package entities
 
 import (
 	"fmt"
+	"time"
 
 	"golang.org/x/exp/rand"
 )
@@ -40,8 +41,9 @@ func (t Tile) Print() {
 }
 
 func GenerateRandomShape() string {
-	shapes := []string{"I", "O", "T"} //"L1", "L2", "Z1", "Z2"
+	shapes := []string{"T"} //"L1", "L2", "Z1", "Z2", I, O
 
+	rand.Seed(uint64(time.Now().UnixNano()))
 	rand := rand.Intn(len(shapes))
 	return shapes[rand]
 }
@@ -253,11 +255,20 @@ func (g *Grid) ClearRow(row int) {
 	// shift all rows above down
 	for i := row; i > 1; i-- {
 		for j := 1; j < g.Width-1; j++ {
-			newTile := g.Tiles[GetCoordinates(i, j)]
-			newTile.Row += 1
+			newTile := g.Tiles[GetCoordinates(i-1, j)]
+			newTile.Row = i
 			g.Tiles[GetCoordinates(i, j)] = newTile
 		}
 	}
+}
+
+func (g Grid) IsRowFull(row int) bool {
+	for i := 1; i < g.Width-1; i++ {
+		if !g.Tiles[GetCoordinates(row, i)].Blocked {
+			return false
+		}
+	}
+	return true
 }
 
 func GetCoordinates(x, y int) string {
