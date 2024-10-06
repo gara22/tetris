@@ -12,11 +12,10 @@ import (
 )
 
 type TetrisGame struct {
-	Grid         entities.Grid `json:"grid"`
-	ActiveShape  entities.Shape
-	Ticker       *time.Ticker
-	ColorCounter int
-	Hub          socket.Hub
+	Grid        entities.Grid `json:"grid"`
+	ActiveShape entities.Shape
+	Ticker      *time.Ticker
+	Hub         socket.Hub
 }
 
 var (
@@ -31,11 +30,10 @@ const (
 
 func NewTetrisGame(hub socket.Hub) TetrisGame {
 	return TetrisGame{
-		Grid:         entities.NewGrid(WIDTH, HEIGHT),
-		ActiveShape:  entities.Shape{},
-		Ticker:       nil,
-		ColorCounter: 0,
-		Hub:          hub,
+		Grid:        entities.NewGrid(WIDTH, HEIGHT),
+		ActiveShape: entities.Shape{},
+		Ticker:      nil,
+		Hub:         hub,
 	}
 }
 
@@ -43,7 +41,7 @@ func (t *TetrisGame) StartGame() {
 	// TODO: generate a random shape here and append it to the shapes slice
 	shapeKind := entities.GenerateRandomShape()
 	fmt.Println("start game")
-	t.ActiveShape = entities.NewShape(shapeKind, TileColors[t.ColorCounter])
+	t.ActiveShape = entities.NewShape(shapeKind)
 	// setup a ticker to move the shape down every second
 	msg := t.Hub.ReadMessage()
 
@@ -87,7 +85,7 @@ func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
 		t.Grid.RenderShape(newShape)
 
 		shapeKind := entities.GenerateRandomShape()
-		t.ActiveShape = entities.NewShape(shapeKind, t.NextColor())
+		t.ActiveShape = entities.NewShape(shapeKind)
 		// TODO: do we need to render here?
 		t.Grid.RenderShape(t.ActiveShape)
 		spew.Dump(t.ActiveShape)
@@ -150,20 +148,9 @@ func (t *TetrisGame) StopTicker() {
 	t.Ticker = nil
 }
 
-func (t *TetrisGame) NextColor() string {
-	if t.ColorCounter == len(TileColors)-1 {
-		t.ColorCounter = 0
-		return TileColors[t.ColorCounter]
-	}
-	t.ColorCounter++
-	return TileColors[t.ColorCounter]
-}
-
 func (t TetrisGame) GetState() entities.Grid {
 	return t.Grid
 }
-
-var TileColors = []string{entities.Cyan, entities.Green, entities.Blue, entities.Red, entities.Yellow, entities.Magenta, entities.Orange}
 
 // func (t *TetrisGame)isGameOver() bool {
 

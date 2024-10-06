@@ -46,7 +46,7 @@ func GenerateRandomShape() string {
 	return shapes[rand]
 }
 
-func NewShape(kind string, color string) Shape {
+func NewShape(kind string) Shape {
 	shape := Shape{}
 	trueval := true
 	switch kind {
@@ -54,19 +54,19 @@ func NewShape(kind string, color string) Shape {
 		// X R X X
 		// 0 0 0 0
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "I", Color: color}, {Row: 1, Column: 4, Display: "I", IsFixed: &trueval, Color: color}, {Row: 1, Column: 5, Display: "I", Color: color}, {Row: 1, Column: 6, Display: "I", Color: color},
+			{Row: 1, Column: 3, Display: "I", Color: Red}, {Row: 1, Column: 4, Display: "I", IsFixed: &trueval, Color: Red}, {Row: 1, Column: 5, Display: "I", Color: Red}, {Row: 1, Column: 6, Display: "I", Color: Red},
 		}
 	case "O":
 		// X X 0 0
 		// X X 0 0
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "O", Color: color}, {Row: 1, Column: 4, Display: "O", Color: color}, {Row: 2, Column: 3, Display: "O", Color: color}, {Row: 2, Column: 4, Display: "O", Color: color},
+			{Row: 1, Column: 3, Display: "O", Color: Blue}, {Row: 1, Column: 4, Display: "O", Color: Blue}, {Row: 2, Column: 3, Display: "O", Color: Blue}, {Row: 2, Column: 4, Display: "O", Color: Blue},
 		}
 	case "T":
 		// X R X 0
 		// 0 X 0 0
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "T", Color: color}, {Row: 1, Column: 4, Display: "T", IsFixed: &trueval, Color: color}, {Row: 1, Column: 5, Display: "T", Color: color}, {Row: 2, Column: 4, Display: "T", Color: color},
+			{Row: 1, Column: 3, Display: "T", Color: Yellow}, {Row: 1, Column: 4, Display: "T", IsFixed: &trueval, Color: Yellow}, {Row: 1, Column: 5, Display: "T", Color: Yellow}, {Row: 2, Column: 4, Display: "T", Color: Yellow},
 		}
 		// case "L1":
 		// 	// X R X 0
@@ -181,7 +181,6 @@ func (s Shape) IsColliding(grid Grid, direction string) bool {
 type Grid struct {
 	Width, Height int
 	Tiles         map[string]Tile `json:"tiles" mapstructure:"tiles"`
-	ColorCounter  int             `json:"colorCounter"`
 }
 
 func NewGrid(width, height int) Grid {
