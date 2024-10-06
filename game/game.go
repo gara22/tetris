@@ -12,12 +12,11 @@ import (
 )
 
 type TetrisGame struct {
-	Grid             entities.Grid `json:"grid"`
-	Shapes           []entities.Shape
-	ActiveShapeIndex int
-	Ticker           *time.Ticker
-	ColorCounter     int
-	Hub              socket.Hub
+	Grid         entities.Grid `json:"grid"`
+	ActiveShape  entities.Shape
+	Ticker       *time.Ticker
+	ColorCounter int
+	Hub          socket.Hub
 }
 
 var (
@@ -32,18 +31,19 @@ const (
 
 func NewTetrisGame(hub socket.Hub) TetrisGame {
 	return TetrisGame{
-		Grid:             entities.NewGrid(WIDTH, HEIGHT),
-		Shapes:           []entities.Shape{},
-		ActiveShapeIndex: 0,
-		Ticker:           nil,
-		ColorCounter:     0,
-		Hub:              hub,
+		Grid:         entities.NewGrid(WIDTH, HEIGHT),
+		ActiveShape:  entities.Shape{},
+		Ticker:       nil,
+		ColorCounter: 0,
+		Hub:          hub,
 	}
 }
 
-func (t *TetrisGame) StartGame() TetrisGame {
+func (t *TetrisGame) StartGame() {
 	// TODO: generate a random shape here and append it to the shapes slice
-	t.Shapes = []entities.Shape{entities.NewShape("I", TileColors[t.ColorCounter])}
+	shapeKind := entities.GenerateRandomShape()
+	fmt.Println("start game")
+	t.ActiveShape = entities.NewShape(shapeKind, TileColors[t.ColorCounter])
 	// setup a ticker to move the shape down every second
 	msg := t.Hub.ReadMessage()
 
@@ -52,56 +52,89 @@ func (t *TetrisGame) StartGame() TetrisGame {
 		for {
 			select {
 			case <-t.Ticker.C:
-				t.Move(MoveParams{Direction: "down"})
+				// t.Move(MoveParams{Direction: "down"})
 
 			case m := <-msg:
-				var msg messages.MoveMessage
-				json.Unmarshal(m, &msg)
-				spew.Dump(msg)
-				t.Move(MoveParams{Direction: msg.Direction})
+				var message messages.MoveMessage
+				json.Unmarshal(m, &message)
+				// spew.Dump(message)
+
+				game, err := t.Move(MoveParams{Direction: message.Direction})
+				if err != nil {
+					fmt.Println("Error moving shape: %s", err)
+				}
+				t = &game
+
+				// game.Move()
+
+				bytes, err := json.Marshal(game.Grid)
+				if err != nil {
+					fmt.Println("Error marshalling grid")
+				}
+				t.Hub.PublishMessage(bytes)
 			}
 		}
 	}()
-
-	return *t
 }
 
-func (t *TetrisGame) Move(params MoveParams) (TetrisGame, error) {
-	var newShape entities.Shape
+func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
+	spew.Dump(t.ActiveShape)
+	newShape, err := t.calculateNewShape(params, t.ActiveShape)
+	// spew.Dump(t.ActiveShape)
+	if err != nil && err.Error() == "Shape is stuck" {
+		fmt.Println("Shape is stuck")
+		newShape = t.ActiveShape.Block()
+		t.Grid.RenderShape(newShape)
+
+		shapeKind := entities.GenerateRandomShape()
+		t.ActiveShape = entities.NewShape(shapeKind, t.NextColor())
+		// TODO: do we need to render here?
+		t.Grid.RenderShape(t.ActiveShape)
+		spew.Dump(t.ActiveShape)
+		return t, nil
+		// spew.Dump(t.Grid)
+	}
+	if err != nil {
+		return t, err
+	}
+	// spew.Dump(t.ActiveShape)
+
+	// if newShape.IsColliding(t.Grid, params.Direction) {
+	// 	fmt.Println("Shape is colliding")
+	// 	// spew.Dump(t.Grid)
+	// 	return t, fmt.Errorf("Shape is colliding")
+	// }
+
+	t.Grid.RenderShape(newShape)
+	t.ActiveShape = newShape
+	fmt.Println("assigning new shape")
+
+	// t.Grid.Print()
+	return t, nil
+}
+
+func (t TetrisGame) calculateNewShape(params MoveParams, activeShape entities.Shape) (entities.Shape, error) {
 	switch params.Direction {
 	case "left":
-		newShape = t.Shapes[t.ActiveShapeIndex].Move("left")
+		return activeShape.Move("left", t.Grid)
 	case "right":
-		newShape = t.Shapes[t.ActiveShapeIndex].Move("right")
+		return activeShape.Move("right", t.Grid)
 	case "down":
-		newShape = t.Shapes[t.ActiveShapeIndex].Move("down")
-		if newShape.IsColliding(t.Grid, params.Direction) {
-			fmt.Println("Shape is stuck")
-			t.Shapes[t.ActiveShapeIndex].Block()
-			t.ActiveShapeIndex++
-			// TODO: generate a random shape here and append it to the shapes slice
-			t.Shapes = append(t.Shapes, entities.NewShape("I", t.NextColor()))
-			return *t, nil
+		newShape, err := activeShape.Move("down", t.Grid)
+
+		if err != nil {
+			return entities.Shape{}, fmt.Errorf("Shape is stuck")
+
 		}
+		return newShape, err
+
+		// if newShape.IsColliding(t.Grid, params.Direction) {
+
+		// 	return entities.Shape{}, true, t, nil
+		// }
 	default:
-		fmt.Println("Invalid input")
+		return entities.Shape{}, fmt.Errorf("Invalid input")
 	}
-	if newShape.IsColliding(t.Grid, params.Direction) {
-		fmt.Println("Shape is colliding")
-		return *t, nil
-	}
-
-	t.Shapes[t.ActiveShapeIndex] = newShape
-
-	t.Grid.RenderShapes(t.Shapes)
-	bytes, err := json.Marshal(t.Grid)
-	if err != nil {
-		fmt.Println("Error marshalling grid")
-		return *t, err
-	}
-	t.Hub.PublishMessage(bytes)
-	t.Grid.Print()
-	return *t, nil
 }
 
 func (t *TetrisGame) StopGame() {
@@ -135,3 +168,11 @@ var TileColors = []string{entities.Cyan, entities.Green, entities.Blue, entities
 // func (t *TetrisGame)isGameOver() bool {
 
 // }
+
+func deepCopy(src, dst interface{}) error {
+	bytes, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(bytes, dst)
+}

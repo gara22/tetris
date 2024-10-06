@@ -2,6 +2,8 @@ package entities
 
 import (
 	"fmt"
+
+	"golang.org/x/exp/rand"
 )
 
 type Tile struct {
@@ -15,7 +17,7 @@ type Tile struct {
 }
 
 type Shape struct {
-	Tiles [4]Tile
+	Tiles []Tile
 }
 
 func NewTile(x, y int) Tile {
@@ -37,13 +39,12 @@ func (t Tile) Print() {
 	fmt.Printf("%s%s%s", color, t.Display, Reset)
 }
 
-// func GenerateRandomShape() Shape {
-// 	shapes := []string{"I", "O", "T", "L1", "L2", "Z1", "Z2"}
-// 	rand := rand.Intn(len(shapes))
-// 	fmt.Println(rand)
-// 	shape := NewShape(shapes[rand])
-// 	return shape
-// }
+func GenerateRandomShape() string {
+	shapes := []string{"I", "O", "T"} //"L1", "L2", "Z1", "Z2"
+
+	rand := rand.Intn(len(shapes))
+	return shapes[rand]
+}
 
 func NewShape(kind string, color string) Shape {
 	shape := Shape{}
@@ -52,23 +53,21 @@ func NewShape(kind string, color string) Shape {
 	case "I":
 		// X R X X
 		// 0 0 0 0
-		shape.Tiles = [4]Tile{
+		shape.Tiles = []Tile{
 			{Row: 1, Column: 3, Display: "I", Color: color}, {Row: 1, Column: 4, Display: "I", IsFixed: &trueval, Color: color}, {Row: 1, Column: 5, Display: "I", Color: color}, {Row: 1, Column: 6, Display: "I", Color: color},
 		}
-		// case "O":
-		// 	// X X 0 0
-		// 	// X X 0 0
-		// 	shape.Tiles = [4]Tile{
-		// 		{Tile{X: 0, Y: 0}, Tile{X: 0, Y: 1}, nil, nil},
-		// 		{Tile{X: 1, Y: 0}, Tile{X: 1, Y: 1}, nil, nil},
-		// 	}
-		// case "T":
-		// 	// X R X 0
-		// 	// 0 X 0 0
-		// 	shape.Tiles = [4]Tile{
-		// 		{Tile{X: 0, Y: 0}, Tile{X: 0, Y: 1}, Tile{X: 0, Y: 2}, nil},
-		// 		{nil, Tile{X: 1, Y: 1}, nil},
-		// 	}
+	case "O":
+		// X X 0 0
+		// X X 0 0
+		shape.Tiles = []Tile{
+			{Row: 1, Column: 3, Display: "O", Color: color}, {Row: 1, Column: 4, Display: "O", Color: color}, {Row: 2, Column: 3, Display: "O", Color: color}, {Row: 2, Column: 4, Display: "O", Color: color},
+		}
+	case "T":
+		// X R X 0
+		// 0 X 0 0
+		shape.Tiles = []Tile{
+			{Row: 1, Column: 3, Display: "T", Color: color}, {Row: 1, Column: 4, Display: "T", IsFixed: &trueval, Color: color}, {Row: 1, Column: 5, Display: "T", Color: color}, {Row: 2, Column: 4, Display: "T", Color: color},
+		}
 		// case "L1":
 		// 	// X R X 0
 		// 	// X 0 0 0
@@ -101,21 +100,39 @@ func NewShape(kind string, color string) Shape {
 	return shape
 }
 
-func (s Shape) Move(direction string) Shape {
+func (s Shape) Move(direction string, grid Grid) (Shape, error) {
+	tempTiles := make([]Tile, len(s.Tiles))
 	for i := 0; i < len(s.Tiles); i++ {
+		newTile := s.Tiles[i]
 		if direction == "left" {
-			s.Tiles[i].Column -= 1
+			newTile.Column -= 1
+			if grid.Tiles[newTile.GetCoordinates()].Blocked {
+				return s, fmt.Errorf("Shape is colliding")
+			}
+			tempTiles[i] = newTile
 		} else if direction == "right" {
-			s.Tiles[i].Column += 1
+			newTile.Column += 1
+			if grid.Tiles[newTile.GetCoordinates()].Blocked {
+				return s, fmt.Errorf("Shape is colliding")
+			}
+			tempTiles[i] = newTile
 		} else if direction == "down" {
-			s.Tiles[i].Row += 1
+			newTile.Row += 1
+			if grid.Tiles[newTile.GetCoordinates()].Blocked {
+				return s, fmt.Errorf("Shape is colliding")
+			}
+			tempTiles[i] = newTile
 		}
 	}
-	return s
+	for i := 0; i < len(s.Tiles); i++ {
+		s.Tiles[i] = tempTiles[i]
+	}
+
+	return s, nil
 }
 
 func (s Shape) GetFixed() Tile {
-	for i := 0; i < 4; i++ {
+	for i := 0; i < len(s.Tiles); i++ {
 		if *s.Tiles[i].IsFixed {
 			return s.Tiles[i]
 		}
@@ -123,47 +140,19 @@ func (s Shape) GetFixed() Tile {
 	return Tile{}
 }
 
-func (s *Shape) MostOuterTiles(direction string) []Tile {
-	mostOuters := []Tile{s.Tiles[0]}
-	for i := 1; i < 4; i++ {
-		switch direction {
-		case "left":
-			if s.Tiles[i].Column < mostOuters[0].Column {
-				mostOuters = []Tile{s.Tiles[i]}
-			}
-			if s.Tiles[i].Column == mostOuters[0].Column {
-				mostOuters = append(mostOuters, s.Tiles[i])
-			}
-		case "right":
-
-			if s.Tiles[i].Column > mostOuters[0].Column {
-				mostOuters = []Tile{s.Tiles[i]}
-			}
-			if s.Tiles[i].Column == mostOuters[0].Column {
-				mostOuters = append(mostOuters, s.Tiles[i])
-			}
-		case "down":
-			if s.Tiles[i].Row > mostOuters[0].Row {
-				mostOuters = []Tile{s.Tiles[i]}
-			}
-			if s.Tiles[i].Row == mostOuters[0].Row {
-				mostOuters = append(mostOuters, s.Tiles[i])
-			}
-		}
+func (s Shape) Block() Shape {
+	fmt.Println(len(s.Tiles))
+	newShape := s
+	for i := 0; i < len(s.Tiles); i++ {
+		newShape.Tiles[i].Blocked = true
 	}
-	return mostOuters
-}
-
-func (s *Shape) Block() {
-	for i := 0; i < 4; i++ {
-		s.Tiles[i].Blocked = true
-	}
+	return newShape
 }
 
 // TODO: Implement this
 func (s Shape) Rotate() {
 	fixed := s.GetFixed()
-	for i := 0; i < 4; i++ {
+	for i := 0; i < len(s.Tiles); i++ {
 		if *s.Tiles[i].IsFixed {
 			continue
 		}
@@ -180,8 +169,8 @@ func (s Shape) Rotate() {
 func (s Shape) IsColliding(grid Grid, direction string) bool {
 
 	// Check if the tile is out of grid bounds
-	for _, t := range s.MostOuterTiles(direction) {
-		if grid.Tiles[t.GetCoordinates()].Blocked {
+	for i := 0; i < len(s.Tiles); i++ {
+		if grid.Tiles[s.Tiles[i].GetCoordinates()].Blocked {
 			return true
 		}
 	}
@@ -198,7 +187,6 @@ type Grid struct {
 func NewGrid(width, height int) Grid {
 	fmt.Println("newGrd")
 	tiles := make(map[string]Tile)
-	emptyTiles := make(map[string]Tile)
 
 	grid := Grid{Width: width, Height: height, Tiles: tiles}
 
@@ -213,7 +201,6 @@ func NewGrid(width, height int) Grid {
 				tile = Tile{Row: i, Column: j, ColorValue: 0, Display: "X", Blocked: true}
 			}
 			tiles[key] = tile
-			emptyTiles[key] = tile
 		}
 	}
 
@@ -238,35 +225,40 @@ func (g Grid) Print() {
 func (g *Grid) Reset() {
 	for i := 0; i < g.Height-1; i++ {
 		for j := 1; j < g.Width-1; j++ {
+			if g.Tiles[GetCoordinates(i, j)].Blocked {
+				continue
+			}
 			g.Tiles[GetCoordinates(i, j)] = NewTile(i, j)
 		}
 	}
 }
 
-func (g *Grid) RenderShapes(shapes []Shape) {
-	// fmt.Println(g.OldShapes)
+func (g *Grid) RenderShape(shape Shape) {
 
-	// for _, oldShape := range g.OldShapes {
-	// 	for _, oldTile := range oldShape.Tiles {
-	// 		g.Tiles[oldTile.GetCoordinates()] = NewTile(oldTile.Row, oldTile.Column)
-	// 	}
-	// }
+	fmt.Println("Rendering shape")
+
+	// spew.Dump(shape)
 
 	g.Reset()
 
-	for _, newShape := range shapes {
-		for _, newTile := range newShape.Tiles {
-			g.Tiles[newTile.GetCoordinates()] = newTile
-		}
+	for _, tile := range shape.Tiles {
+		g.Tiles[tile.GetCoordinates()] = tile
 	}
 
-	// if len(g.OldShapes) == len(shapes) {
-	// 	copy(g.OldShapes, shapes)
-	// } else {
-	// 	g.OldShapes = append(g.OldShapes, shapes...)
-	// }
+}
 
-	// fmt.Println(g.OldShapes)
+func (g *Grid) ClearRow(row int) {
+	for i := 1; i < g.Width-1; i++ {
+		g.Tiles[GetCoordinates(row, i)] = NewTile(row, i)
+	}
+	// shift all rows above down
+	for i := row; i > 1; i-- {
+		for j := 1; j < g.Width-1; j++ {
+			newTile := g.Tiles[GetCoordinates(i, j)]
+			newTile.Row += 1
+			g.Tiles[GetCoordinates(i, j)] = newTile
+		}
+	}
 }
 
 func GetCoordinates(x, y int) string {
@@ -287,12 +279,11 @@ var Reset = "\033[0m"
 
 func getTileColor(tile string, color string) string {
 	switch tile {
-	case "I":
-		return color
 	case "0":
 		return Black
 	case "X":
 		return White
+	default:
+		return color
 	}
-	return ""
 }
