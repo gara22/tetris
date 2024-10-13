@@ -38,10 +38,8 @@ func NewTetrisGame(hub socket.Hub) TetrisGame {
 }
 
 func (t *TetrisGame) StartGame() {
-	// TODO: generate a random shape here and append it to the shapes slice
-	shapeKind := entities.GenerateRandomShape()
 	fmt.Println("start game")
-	t.ActiveShape = entities.NewShape(shapeKind)
+	t.ActiveShape = entities.GenerateRandomShape()
 	// setup a ticker to move the shape down every second
 	msg := t.Hub.ReadMessage()
 
@@ -84,8 +82,7 @@ func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
 		newShape = t.ActiveShape.Block()
 		t.Grid.RenderShape(newShape)
 
-		shapeKind := entities.GenerateRandomShape()
-		t.ActiveShape = entities.NewShape(shapeKind)
+		t.ActiveShape = entities.GenerateRandomShape()
 		// TODO: do we need to render here?
 		t.checkForFullRows()
 		t.Grid.RenderShape(t.ActiveShape)
@@ -108,27 +105,37 @@ func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
 }
 
 func (t TetrisGame) calculateNewShape(params MoveParams, activeShape entities.Shape) (entities.Shape, error) {
+	var newShape entities.Shape
 	switch params.Direction {
 	case "left":
-		return activeShape.Move("left", t.Grid)
+		newShape = activeShape.Move("left", t.Grid)
 	case "right":
-		return activeShape.Move("right", t.Grid)
+		newShape = activeShape.Move("right", t.Grid)
 	case "down":
-		newShape, err := activeShape.Move("down", t.Grid)
+		newShape := activeShape.Move("down", t.Grid)
 
-		if err != nil {
+		if t.isShapeColliding(newShape) {
 			return entities.Shape{}, fmt.Errorf("Shape is stuck")
-
 		}
-		return newShape, err
-
-		// if newShape.IsColliding(t.Grid, params.Direction) {
-
-		// 	return entities.Shape{}, true, t, nil
-		// }
+		return newShape, nil
+	case "up":
+		newShape = activeShape.Rotate()
 	default:
 		return entities.Shape{}, fmt.Errorf("Invalid input")
 	}
+	if t.isShapeColliding(newShape) {
+		return entities.Shape{}, fmt.Errorf("Cannot move shape")
+	}
+	return newShape, nil
+}
+
+func (t TetrisGame) isShapeColliding(newShape entities.Shape) bool {
+	for _, tile := range newShape.Tiles {
+		if t.Grid.Tiles[tile.GetCoordinates()].Blocked {
+			return true
+		}
+	}
+	return false
 }
 
 // TODO: double check later if it works if multiple rows are full

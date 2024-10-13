@@ -2,6 +2,7 @@ package entities
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"golang.org/x/exp/rand"
@@ -14,11 +15,13 @@ type Tile struct {
 	Color      string `json:"color"`
 	Display    string `json:"display"`
 	Blocked    bool
-	IsFixed    *bool
+	IsFixed    bool
 }
 
 type Shape struct {
-	Tiles []Tile
+	Tiles    []Tile
+	kind     string
+	Rotation int
 }
 
 func NewTile(x, y int) Tile {
@@ -40,35 +43,43 @@ func (t Tile) Print() {
 	fmt.Printf("%s%s%s", color, t.Display, Reset)
 }
 
-func GenerateRandomShape() string {
-	shapes := []string{"T"} //"L1", "L2", "Z1", "Z2", I, O
+func GenerateRandomShape() Shape {
+	shapes := []string{"I"} //"L1", "L2", "Z1", "Z2", I, O
 
 	rand.Seed(uint64(time.Now().UnixNano()))
 	rand := rand.Intn(len(shapes))
-	return shapes[rand]
+	return NewShape(shapes[rand])
 }
 
 func NewShape(kind string) Shape {
 	shape := Shape{}
-	trueval := true
 	switch kind {
 	case "I":
 		// X R X X
 		// 0 0 0 0
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "I", Color: Red}, {Row: 1, Column: 4, Display: "I", IsFixed: &trueval, Color: Red}, {Row: 1, Column: 5, Display: "I", Color: Red}, {Row: 1, Column: 6, Display: "I", Color: Red},
+			{Row: 1, Column: 3, Display: "I", Color: Red},
+			{Row: 1, Column: 4, Display: "I", IsFixed: true, Color: Red},
+			{Row: 1, Column: 5, Display: "I", Color: Red},
+			{Row: 1, Column: 6, Display: "I", Color: Red},
 		}
 	case "O":
 		// X X 0 0
 		// X X 0 0
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "O", Color: Blue}, {Row: 1, Column: 4, Display: "O", Color: Blue}, {Row: 2, Column: 3, Display: "O", Color: Blue}, {Row: 2, Column: 4, Display: "O", Color: Blue},
+			{Row: 1, Column: 3, Display: "O", Color: Blue},
+			{Row: 1, Column: 4, Display: "O", Color: Blue},
+			{Row: 2, Column: 3, Display: "O", Color: Blue},
+			{Row: 2, Column: 4, Display: "O", Color: Blue},
 		}
 	case "T":
 		// X R X 0
 		// 0 X 0 0
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "T", Color: Yellow}, {Row: 1, Column: 4, Display: "T", IsFixed: &trueval, Color: Yellow}, {Row: 1, Column: 5, Display: "T", Color: Yellow}, {Row: 2, Column: 4, Display: "T", Color: Yellow},
+			{Row: 1, Column: 3, Display: "T0", Color: Yellow},
+			{Row: 1, Column: 4, Display: "T1", IsFixed: true, Color: Yellow},
+			{Row: 1, Column: 5, Display: "T2", Color: Yellow},
+			{Row: 2, Column: 4, Display: "T3", Color: Yellow},
 		}
 		// case "L1":
 		// 	// X R X 0
@@ -99,43 +110,29 @@ func NewShape(kind string) Shape {
 		// 		{nil, Tile{X: 1, Y: 1}, Tile{X: 1, Y: 2}, nil},
 		// 	}
 	}
+	shape.kind = kind
 	return shape
 }
 
-func (s Shape) Move(direction string, grid Grid) (Shape, error) {
-	tempTiles := make([]Tile, len(s.Tiles))
-	for i := 0; i < len(s.Tiles); i++ {
-		newTile := s.Tiles[i]
+func (s Shape) Move(direction string, grid Grid) Shape {
+	newShape := s.Clone()
+	for i := 0; i < len(newShape.Tiles); i++ {
+
 		if direction == "left" {
-			newTile.Column -= 1
-			if grid.Tiles[newTile.GetCoordinates()].Blocked {
-				return s, fmt.Errorf("Shape is colliding")
-			}
-			tempTiles[i] = newTile
+			newShape.Tiles[i].Column -= 1
 		} else if direction == "right" {
-			newTile.Column += 1
-			if grid.Tiles[newTile.GetCoordinates()].Blocked {
-				return s, fmt.Errorf("Shape is colliding")
-			}
-			tempTiles[i] = newTile
+			newShape.Tiles[i].Column += 1
 		} else if direction == "down" {
-			newTile.Row += 1
-			if grid.Tiles[newTile.GetCoordinates()].Blocked {
-				return s, fmt.Errorf("Shape is colliding")
-			}
-			tempTiles[i] = newTile
+			newShape.Tiles[i].Row += 1
 		}
 	}
-	for i := 0; i < len(s.Tiles); i++ {
-		s.Tiles[i] = tempTiles[i]
-	}
 
-	return s, nil
+	return newShape
 }
 
 func (s Shape) GetFixed() Tile {
 	for i := 0; i < len(s.Tiles); i++ {
-		if *s.Tiles[i].IsFixed {
+		if s.Tiles[i].IsFixed {
 			return s.Tiles[i]
 		}
 	}
@@ -151,32 +148,99 @@ func (s Shape) Block() Shape {
 	return newShape
 }
 
-// TODO: Implement this
-func (s Shape) Rotate() {
-	fixed := s.GetFixed()
-	for i := 0; i < len(s.Tiles); i++ {
-		if *s.Tiles[i].IsFixed {
-			continue
-		}
-		if s.Tiles[i].Row == fixed.Row {
-			s.Tiles[i].Row = fixed.Row
-			s.Tiles[i].Column = fixed.Column
-		} else {
-			s.Tiles[i].Row = fixed.Row - i
-			s.Tiles[i].Column = fixed.Column
-		}
-	}
+func (s Shape) Clone() Shape {
+	newShape := Shape{}
+	newShape.Tiles = slices.Clone(s.Tiles)
+	newShape.kind = s.kind
+	newShape.Rotation = s.Rotation
+	return newShape
 }
 
-func (s Shape) IsColliding(grid Grid, direction string) bool {
+// TODO: Implement this
+func (s Shape) Rotate() Shape {
+	// fixed := s.GetFixed()
+	fmt.Println("Rotating")
+	newShape := Shape{}
+	newShape.Tiles = slices.Clone(s.Tiles)
+	newShape.kind = s.kind
+	newShape.Rotation = s.Rotation
 
-	// Check if the tile is out of grid bounds
-	for i := 0; i < len(s.Tiles); i++ {
-		if grid.Tiles[s.Tiles[i].GetCoordinates()].Blocked {
-			return true
+	switch s.kind {
+	case "T":
+		switch s.Rotation {
+		case 0:
+			// X R X 0
+			// 0 X 0 0
+			newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column += 1
+			newShape.Tiles[2].Row += 1
+			newShape.Tiles[2].Column -= 1
+			newShape.Tiles[3].Row -= 1
+			newShape.Tiles[3].Column -= 1
+			newShape.Rotation = 1
+		case 1:
+			// 0 X 0
+			// 0 R X
+			// 0 X 0
+			newShape.Tiles[0].Row += 1
+			newShape.Tiles[0].Column += 1
+			newShape.Tiles[2].Row -= 1
+			newShape.Tiles[2].Column -= 1
+			newShape.Tiles[3].Row -= 1
+			newShape.Tiles[3].Column += 1
+			newShape.Rotation = 2
+
+		case 2:
+			// 0 X 0
+			// X R X
+			// 0 X 0
+			newShape.Tiles[0].Row += 1
+			newShape.Tiles[0].Column -= 1
+			newShape.Tiles[2].Row -= 1
+			newShape.Tiles[2].Column += 1
+			newShape.Tiles[3].Row += 1
+			newShape.Tiles[3].Column += 1
+			newShape.Rotation = 3
+		case 3:
+			// X R X 0
+			// 0 X 0 0
+			newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column -= 1
+			newShape.Tiles[2].Row += 1
+			newShape.Tiles[2].Column += 1
+			newShape.Tiles[3].Row += 1
+			newShape.Tiles[3].Column -= 1
+			newShape.Rotation = 0
 		}
+	case "I":
+		switch s.Rotation {
+		case 0:
+			// X
+			// R
+			// X
+			// X
+			newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column += 1
+			newShape.Tiles[2].Row += 1
+			newShape.Tiles[2].Column -= 1
+			newShape.Tiles[3].Row += 2
+			newShape.Tiles[3].Column -= 2
+			newShape.Rotation = 1
+		case 1:
+			// X X X R
+			newShape.Tiles[0].Row += 1
+			newShape.Tiles[0].Column -= 1
+			newShape.Tiles[2].Row -= 1
+			newShape.Tiles[2].Column += 1
+			newShape.Tiles[3].Row -= 2
+			newShape.Tiles[3].Column += 2
+			newShape.Rotation = 0
+		}
+	case "O":
+		return s
+
 	}
-	return false
+	return newShape
 }
 
 // 11 * 21 default
