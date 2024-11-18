@@ -3,7 +3,8 @@ package main
 import (
 	"time"
 
-	"github.com/gara22/tetris/game"
+	"github.com/davecgh/go-spew/spew"
+	app_service "github.com/gara22/tetris/app-service"
 	handler "github.com/gara22/tetris/http"
 	socket "github.com/gara22/tetris/websocket"
 	"github.com/gin-contrib/cors"
@@ -12,10 +13,9 @@ import (
 
 func main() {
 
-	hub := socket.NewHub()
-	go hub.Run()
-	tetrisGame := game.NewTetrisGame(*hub)
-	tetrisGame.StartGame()
+	appService := app_service.NewAppService()
+	// tetrisGame := game.NewTetrisGame(*hub)
+	// tetrisGame.StartGame()
 
 	// allow cors for localhost:3000
 
@@ -29,11 +29,21 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	handler := handler.NewHTTPHandler(&tetrisGame)
-	router.POST("/move", handler.Move)
-	router.GET("/state", handler.GetState)
+	handler := handler.NewHTTPHandler(*appService)
+	router.POST("/new-game", handler.NewTetrisGame)
 	router.GET("/ws", func(c *gin.Context) {
-		socket.ServeWs(hub, c.Writer, c.Request)
+		// TODO: validate game id
+		id := c.Query("id")
+		if id == "" {
+			c.JSON(400, gin.H{
+				"error": "game id is required",
+			})
+			return
+		}
+
+		spew.Dump(appService.Games[id])
+
+		socket.ServeWs(&appService.Games[id].Hub, c.Writer, c.Request)
 	})
 	router.Run(":8080")
 

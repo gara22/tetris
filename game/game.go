@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,10 +13,12 @@ import (
 )
 
 type TetrisGame struct {
-	Grid        entities.Grid `json:"grid"`
-	ActiveShape entities.Shape
-	Ticker      *time.Ticker
-	Hub         socket.Hub
+	Grid            entities.Grid `json:"grid"`
+	ActiveShape     entities.Shape
+	Ticker          *time.Ticker
+	Hub             socket.Hub
+	IsGameOver      bool `json:"isGameOver"`
+	GameOverChannel chan bool
 }
 
 var (
@@ -28,12 +31,13 @@ const (
 	WIDTH  = 11
 )
 
-func NewTetrisGame(hub socket.Hub) TetrisGame {
+func NewTetrisGame(hub *socket.Hub, gameOverChannel chan bool) TetrisGame {
 	return TetrisGame{
-		Grid:        entities.NewGrid(WIDTH, HEIGHT),
-		ActiveShape: entities.Shape{},
-		Ticker:      nil,
-		Hub:         hub,
+		Grid:            entities.NewGrid(WIDTH, HEIGHT),
+		ActiveShape:     entities.Shape{},
+		Ticker:          nil,
+		Hub:             *hub,
+		GameOverChannel: gameOverChannel,
 	}
 }
 
@@ -58,14 +62,24 @@ func (t *TetrisGame) StartGame() {
 				game, err := t.Move(MoveParams{Direction: message.Direction})
 				if err != nil {
 					fmt.Println("Error moving shape: %s", err)
+					if err.Error() == "Game over" {
+						t.EndGame()
+						game.IsGameOver = true
+					}
 				}
 				t = &game
 
 				// game.Move()
 
-				bytes, err := json.Marshal(game.Grid)
+				gameStateMessage := messages.GameStateMessage{
+					Grid:       game.GetState(),
+					IsGameOver: game.IsGameOver,
+				}
+
+				bytes, err := json.Marshal(gameStateMessage)
 				if err != nil {
 					fmt.Println("Error marshalling grid")
+					continue
 				}
 				t.Hub.PublishMessage(bytes)
 			}
@@ -85,6 +99,9 @@ func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
 		t.ActiveShape = entities.GenerateRandomShape()
 		// TODO: do we need to render here?
 		t.checkForFullRows()
+		if t.isGameOver() {
+			return t, errors.New("Game over")
+		}
 		t.Grid.RenderShape(t.ActiveShape)
 		spew.Dump(t.ActiveShape)
 		t.Grid.Print()
@@ -147,24 +164,24 @@ func (t *TetrisGame) checkForFullRows() {
 	}
 }
 
-func (t *TetrisGame) StopGame() {
+func (t *TetrisGame) EndGame() {
 	t.Ticker.Stop()
+	t.GameOverChannel <- true
 }
 
 func (t *TetrisGame) StartTicker() {
 	t.Ticker = time.NewTicker(1 * time.Second)
 }
 
-func (t *TetrisGame) StopTicker() {
-	t.Ticker.Stop()
-	t.Ticker = nil
-}
-
 func (t TetrisGame) GetState() entities.Grid {
 	return t.Grid
 }
 
-// TODO: implement this
 func (t *TetrisGame) isGameOver() bool {
+	for _, tile := range t.ActiveShape.Tiles {
+		if t.Grid.Tiles[tile.GetCoordinates()].Blocked {
+			return true
+		}
+	}
 	return false
 }
