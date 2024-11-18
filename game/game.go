@@ -19,7 +19,7 @@ type TetrisGame struct {
 }
 
 var (
-	// Make sure that TurnaroundManager implements the AppService interface
+	// Make sure that TetrisGame implements the Game interface
 	_ Game = (*TetrisGame)(nil)
 )
 
@@ -164,14 +164,7 @@ func (t TetrisGame) GetState() entities.Grid {
 	return t.Grid
 }
 
-// func (t *TetrisGame)isGameOver() bool {
-
-// }
-
-func deepCopy(src, dst interface{}) error {
-	bytes, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(bytes, dst)
+// TODO: implement this
+func (t *TetrisGame) isGameOver() bool {
+	return false
 }

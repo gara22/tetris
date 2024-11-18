@@ -44,7 +44,7 @@ func (t Tile) Print() {
 }
 
 func GenerateRandomShape() Shape {
-	shapes := []string{"I"} //"L1", "L2", "Z1", "Z2", I, O
+	shapes := []string{"L1", "L2", "Z1", "Z2", "I", "O", "T"}
 
 	rand.Seed(uint64(time.Now().UnixNano()))
 	rand := rand.Intn(len(shapes))
@@ -81,34 +81,45 @@ func NewShape(kind string) Shape {
 			{Row: 1, Column: 5, Display: "T2", Color: Yellow},
 			{Row: 2, Column: 4, Display: "T3", Color: Yellow},
 		}
-		// case "L1":
-		// 	// X R X 0
-		// 	// X 0 0 0
-		// 	shape.Tiles = [4]Tile{
-		// 		{Tile{X: 0, Y: 0}, Tile{X: 0, Y: 1}, Tile{X: 0, Y: 3}, nil},
-		// 		{Tile{X: 1, Y: 0}, nil, nil, nil},
-		// 	}
-		// case "L2":
-		// 	// X 0 0 0
-		// 	// X R X 0
-		// 	shape.Tiles = [4]Tile{
-		// 		{Tile{X: 0, Y: 0}, nil, nil, nil},
-		// 		{Tile{X: 1, Y: 0}, Tile{X: 1, Y: 1}, Tile{X: 1, Y: 3}, nil},
-		// 	}
-		// case "Z1":
-		// 	// 0 X X 0
-		// 	// X R 0 0
-		// 	shape.Tiles = [4]Tile{
-		// 		{nil, Tile{X: 0, Y: 1}, Tile{X: 0, Y: 2}, nil},
-		// 		{Tile{X: 1, Y: 0}, Tile{X: 1, Y: 1}, nil, nil},
-		// 	}
-		// case "Z2":
-		// 	// X X 0 0
-		// 	// 0 R X 0
-		// 	shape.Tiles = [4]Tile{
-		// 		{Tile{X: 0, Y: 0}, Tile{X: 0, Y: 1}, nil, nil},
-		// 		{nil, Tile{X: 1, Y: 1}, Tile{X: 1, Y: 2}, nil},
-		// 	}
+	case "L1":
+		// X R X 0
+		// X 0 0 0
+
+		shape.Tiles = []Tile{
+			{Row: 1, Column: 3, Display: "L10", Color: Cyan},
+			{Row: 1, Column: 4, Display: "L11", IsFixed: true, Color: Cyan},
+			{Row: 1, Column: 5, Display: "L12", Color: Cyan},
+			{Row: 2, Column: 3, Display: "L13", Color: Cyan},
+		}
+
+	case "L2":
+		// X 0 0 0
+		// X R X 0
+		shape.Tiles = []Tile{
+			{Row: 1, Column: 3, Display: "L20", Color: Cyan},
+			{Row: 1, Column: 4, Display: "L21", IsFixed: true, Color: Cyan},
+			{Row: 1, Column: 5, Display: "L22", Color: Cyan},
+			{Row: 2, Column: 5, Display: "L23", Color: Cyan},
+		}
+	case "Z1":
+		// 0 X X 0
+		// X R 0 0
+		shape.Tiles = []Tile{
+			{Row: 1, Column: 3, Display: "Z10", Color: Magenta},
+			{Row: 1, Column: 4, Display: "Z11", IsFixed: true, Color: Magenta},
+			{Row: 2, Column: 4, Display: "Z12", Color: Magenta},
+			{Row: 2, Column: 5, Display: "Z13", Color: Magenta},
+		}
+	case "Z2":
+		// X X 0 0
+		// 0 R X X
+		shape.Tiles = []Tile{
+			{Row: 1, Column: 4, Display: "Z20", Color: Magenta},
+			{Row: 1, Column: 5, Display: "Z21", IsFixed: true, Color: Magenta},
+			{Row: 2, Column: 3, Display: "Z22", Color: Magenta},
+			{Row: 2, Column: 4, Display: "Z23", Color: Magenta},
+		}
+
 	}
 	shape.kind = kind
 	return shape
@@ -130,15 +141,6 @@ func (s Shape) Move(direction string, grid Grid) Shape {
 	return newShape
 }
 
-func (s Shape) GetFixed() Tile {
-	for i := 0; i < len(s.Tiles); i++ {
-		if s.Tiles[i].IsFixed {
-			return s.Tiles[i]
-		}
-	}
-	return Tile{}
-}
-
 func (s Shape) Block() Shape {
 	fmt.Println(len(s.Tiles))
 	newShape := s
@@ -156,9 +158,7 @@ func (s Shape) Clone() Shape {
 	return newShape
 }
 
-// TODO: Implement this
 func (s Shape) Rotate() Shape {
-	// fixed := s.GetFixed()
 	fmt.Println("Rotating")
 	newShape := Shape{}
 	newShape.Tiles = slices.Clone(s.Tiles)
@@ -236,6 +236,195 @@ func (s Shape) Rotate() Shape {
 			newShape.Tiles[3].Column += 2
 			newShape.Rotation = 0
 		}
+	case "L1":
+		switch s.Rotation {
+		case 0:
+			// X R X 0
+			// X 0 0 0
+			newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column += 1
+			newShape.Tiles[2].Row += 1
+			newShape.Tiles[2].Column -= 1
+			newShape.Tiles[3].Row -= 2
+			// newShape.Tiles[3].Column -= 2
+			newShape.Rotation = 1
+		case 1:
+			// X X
+			// 0 R
+			// 0 X
+			// 0 X
+			newShape.Tiles[0].Row += 1
+			newShape.Tiles[0].Column -= 1
+			newShape.Tiles[2].Row -= 1
+			newShape.Tiles[2].Column += 1
+			// newShape.Tiles[3].Row -= 2
+			newShape.Tiles[3].Column += 2
+			newShape.Rotation = 2
+		case 2:
+			// 0 X 0 0
+			// X R X 0
+			newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column += 1
+			newShape.Tiles[2].Row += 1
+			newShape.Tiles[2].Column -= 1
+			newShape.Tiles[3].Row += 2
+			// newShape.Tiles[3].Column += 2
+			newShape.Rotation = 3
+		case 3:
+			// X 0
+			// X R
+			// X 0
+			// 0 0
+			newShape.Tiles[0].Row += 1
+			newShape.Tiles[0].Column -= 1
+			newShape.Tiles[2].Row -= 1
+			newShape.Tiles[2].Column += 1
+			// newShape.Tiles[3].Row += 2
+			newShape.Tiles[3].Column -= 2
+			newShape.Rotation = 0
+		}
+	case "L2":
+		switch s.Rotation {
+		case 0:
+			// X 0 0 0
+			// X R X 0
+			newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column += 1
+			newShape.Tiles[2].Row += 1
+			newShape.Tiles[2].Column -= 1
+			// newShape.Tiles[3].Row += 2
+			newShape.Tiles[3].Column -= 2
+			newShape.Rotation = 1
+		case 1:
+			// 0 X
+			// X R
+			// 0 X
+			// 0 0
+			newShape.Tiles[0].Row += 1
+			newShape.Tiles[0].Column -= 1
+			newShape.Tiles[2].Row -= 1
+			newShape.Tiles[2].Column += 1
+			newShape.Tiles[3].Row -= 2
+			// newShape.Tiles[3].Column += 2
+			newShape.Rotation = 2
+		case 2:
+			// 0 0 X
+			// X R X
+			// 0 X 0
+			newShape.Tiles[0].Row += 1
+			newShape.Tiles[0].Column += 1
+			newShape.Tiles[2].Row -= 1
+			newShape.Tiles[2].Column -= 1
+			// newShape.Tiles[3].Row -= 2
+			newShape.Tiles[3].Column += 2
+			newShape.Rotation = 3
+
+		case 3:
+			// X 0
+			// X R
+			// 0 X
+			// 0 0
+			newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column -= 1
+			newShape.Tiles[2].Row += 1
+			newShape.Tiles[2].Column += 1
+
+			newShape.Tiles[3].Row += 2
+			// newShape.Tiles[3].Column -= 2
+			newShape.Rotation = 0
+
+		}
+	case "Z1":
+		switch s.Rotation {
+		case 0:
+			// 0 X X 0
+			// X R 0 0
+			// newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column += 2
+			newShape.Tiles[1].Row += 1
+			newShape.Tiles[1].Column += 1
+			newShape.Tiles[3].Row += 1
+			newShape.Tiles[3].Column -= 1
+			newShape.Rotation = 1
+		case 1:
+			// X 0
+			// R X
+			// 0 0
+			// 0 0
+			newShape.Tiles[0].Row += 2
+			newShape.Tiles[1].Row += 1
+			newShape.Tiles[1].Column -= 1
+			newShape.Tiles[3].Row -= 1
+			newShape.Tiles[3].Column -= 1
+			newShape.Rotation = 2
+		case 2:
+			// 0 X X 0
+			// X R 0 0
+			// newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column -= 2
+			newShape.Tiles[1].Row -= 1
+			newShape.Tiles[1].Column -= 1
+			newShape.Tiles[3].Row -= 1
+			newShape.Tiles[3].Column += 1
+			newShape.Rotation = 3
+		case 3:
+			// X 0
+			// R X
+			// 0 0
+			// 0 0
+			newShape.Tiles[0].Row -= 2
+			newShape.Tiles[1].Row -= 1
+			newShape.Tiles[1].Column += 1
+			newShape.Tiles[3].Row += 1
+			newShape.Tiles[3].Column += 1
+			newShape.Rotation = 0
+		}
+	case "Z2":
+		switch s.Rotation {
+		case 0:
+			// X X 0 0
+			// 0 R X X
+			newShape.Tiles[0].Row += 1
+			newShape.Tiles[0].Column += 1
+			newShape.Tiles[1].Row += 2
+			newShape.Tiles[2].Row -= 1
+			newShape.Tiles[2].Column += 1
+			newShape.Rotation = 1
+		case 1:
+			// 0 X
+			// X R
+			// X 0
+			// 0 0
+			newShape.Tiles[0].Row += 1
+			newShape.Tiles[0].Column -= 1
+			newShape.Tiles[1].Column -= 2
+			newShape.Tiles[2].Row += 1
+			newShape.Tiles[2].Column += 1
+			newShape.Rotation = 2
+
+		case 2:
+			// 0 0 X
+			// X R X
+			// X 0 0
+			newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column -= 1
+			newShape.Tiles[1].Row -= 2
+			newShape.Tiles[2].Row += 1
+			newShape.Tiles[2].Column -= 1
+			newShape.Rotation = 3
+		case 3:
+			// X 0
+			// R X
+			// 0 X
+			// 0 0
+			newShape.Tiles[0].Row -= 1
+			newShape.Tiles[0].Column += 1
+			newShape.Tiles[1].Column += 2
+			newShape.Tiles[2].Row -= 1
+			newShape.Tiles[2].Column -= 1
+			newShape.Rotation = 0
+		}
+
 	case "O":
 		return s
 
