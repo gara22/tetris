@@ -14,7 +14,6 @@ import (
 type TetrisGame struct {
 	Grid            entities.Grid
 	ActiveShape     entities.Shape
-	Ticker          *time.Ticker
 	Hub             socket.Hub
 	IsGameOver      bool
 	GameOverChannel chan bool
@@ -35,10 +34,9 @@ func NewTetrisGame(hub *socket.Hub, gameOverChannel chan bool) TetrisGame {
 	return TetrisGame{
 		Grid:            entities.NewGrid(WIDTH, HEIGHT),
 		ActiveShape:     entities.Shape{},
-		Ticker:          nil,
 		Hub:             *hub,
 		GameOverChannel: gameOverChannel,
-		Progress:        Progress{Level: 1, LinesCleared: 0},
+		Progress:        Progress{Level: 1, LinesCleared: 0, Score: 0, Ticker: nil},
 	}
 }
 
@@ -54,36 +52,57 @@ func (t *TetrisGame) StartGame() {
 	msg := t.Hub.ReadMessage()
 
 	go func() {
-		t.Ticker = time.NewTicker(1 * time.Second)
+		t.Progress.Ticker = time.NewTicker(1 * time.Second)
 		for {
 			select {
-			case <-t.Ticker.C:
-				// t.Move(MoveParams{Direction: "down"})
+			case <-t.Progress.Ticker.C:
 
-			case m := <-msg:
-				var message messages.MoveMessage
-				json.Unmarshal(m, &message)
-				// spew.Dump(message)
-
-				game, err := t.Move(MoveParams{Direction: message.Direction})
+				down := messages.MoveMessage{Direction: "down"}
+				message, err := json.Marshal(down)
 				if err != nil {
-					fmt.Println("Error moving shape: %s", err)
-					if err.Error() == "Game over" {
-						t.EndGame()
-						game.IsGameOver = true
-					}
+					fmt.Println("Error marshalling message")
 				}
-				t = &game
-
-				// game.Move()
-
-				err = t.PublishGameState()
+				err = t.handleMove(message)
 				if err != nil {
-					fmt.Println("Error publishing game state")
+					fmt.Println("Error handling move")
+				}
+			case m := <-msg:
+				err := t.handleMove(m)
+				if err != nil {
+					fmt.Println("Error handling move")
 				}
 			}
 		}
 	}()
+}
+
+func (t *TetrisGame) handleMove(messageBytes []byte) error {
+	var message messages.MoveMessage
+	err := json.Unmarshal(messageBytes, &message)
+	if err != nil {
+		return errors.New("Error unmarshalling message")
+	}
+	// spew.Dump(message)
+
+	game, err := t.Move(MoveParams{Direction: message.Direction})
+	if err != nil {
+		fmt.Println("Error moving shape: %s", err)
+		if err.Error() == "Game over" {
+			t.EndGame()
+			game.IsGameOver = true
+		}
+	}
+
+	t.Grid = game.Grid
+	t.ActiveShape = game.ActiveShape
+	t.IsGameOver = game.IsGameOver
+	t.Progress = game.Progress
+
+	err = t.PublishGameState()
+	if err != nil {
+		return errors.New("Error publishing game state")
+	}
+	return nil
 }
 
 func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
@@ -184,12 +203,12 @@ func (t *TetrisGame) PublishGameState() error {
 }
 
 func (t *TetrisGame) EndGame() {
-	t.Ticker.Stop()
+	t.Progress.Ticker.Stop()
 	t.GameOverChannel <- true
 }
 
 func (t *TetrisGame) StartTicker() {
-	t.Ticker = time.NewTicker(1 * time.Second)
+	t.Progress.Ticker = time.NewTicker(1 * time.Second)
 }
 
 func (t TetrisGame) GetState() entities.Grid {

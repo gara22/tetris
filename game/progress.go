@@ -1,9 +1,12 @@
 package game
 
+import "time"
+
 type Progress struct {
 	Level        int
 	LinesCleared int
 	Score        int
+	Ticker       *time.Ticker
 }
 
 func (p *Progress) AddLinesCleared(rows int) {
@@ -16,7 +19,7 @@ func (p *Progress) AddLinesCleared(rows int) {
 
 	for i := p.LinesCleared; i > p.LinesCleared-rows; i-- {
 		if i%10 == 0 {
-			p.Level++
+			p.BumpLevel()
 		}
 	}
 
@@ -40,5 +43,17 @@ func (p *Progress) calculateScore(rows int) {
 	p.Score += (BASE_SCORE * multiplier) * (p.Level + 1)
 }
 
+func (p *Progress) BumpLevel() {
+	newLevel := p.Level + 1
+	p.Level = newLevel
+	p.Ticker.Stop()
+	p.Ticker = time.NewTicker(calculateNextTicker(newLevel))
+}
+
+func calculateNextTicker(level int) time.Duration {
+	return (time.Duration(BASE_TICK) - (time.Duration(level * 25))) * time.Millisecond
+}
+
 const MAX_LEVEL = 29
 const BASE_SCORE = 100
+const BASE_TICK = 1000
