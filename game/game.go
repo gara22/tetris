@@ -18,6 +18,7 @@ type TetrisGame struct {
 	Hub             socket.Hub
 	IsGameOver      bool
 	GameOverChannel chan bool
+	Progress        Progress
 }
 
 var (
@@ -37,6 +38,7 @@ func NewTetrisGame(hub *socket.Hub, gameOverChannel chan bool) TetrisGame {
 		Ticker:          nil,
 		Hub:             *hub,
 		GameOverChannel: gameOverChannel,
+		Progress:        Progress{Level: 1, LinesCleared: 0},
 	}
 }
 
@@ -150,19 +152,26 @@ func (t TetrisGame) isShapeColliding(newShape entities.Shape) bool {
 	return false
 }
 
-// TODO: double check later if it works if multiple rows are full
 func (t *TetrisGame) checkForFullRows() {
+	clearedRows := 0
 	for row := 0; row < t.Grid.Height-1; row++ {
 		if t.Grid.IsRowFull(row) {
 			t.Grid.ClearRow(row)
+			clearedRows++
 		}
+	}
+	if clearedRows > 0 {
+		t.Progress.AddLinesCleared(clearedRows)
 	}
 }
 
 func (t *TetrisGame) PublishGameState() error {
 	gameStateMessage := messages.GameStateMessage{
-		Grid:       t.GetState(),
-		IsGameOver: t.IsGameOver,
+		Grid:         t.GetState(),
+		IsGameOver:   t.IsGameOver,
+		Level:        t.Progress.Level,
+		LinesCleared: t.Progress.LinesCleared,
+		Score:        t.Progress.Score,
 	}
 
 	bytes, err := json.Marshal(gameStateMessage)

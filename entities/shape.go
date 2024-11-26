@@ -450,8 +450,8 @@ func NewGrid(width, height int) Grid {
 			var tile Tile
 
 			tile = NewTile(i, j)
-			// edges
-			if j == 0 || i == 0 || j == grid.Width-1 || i == grid.Height-1 {
+			// edges, except top
+			if j == 0 || j == grid.Width-1 || i == grid.Height-1 {
 				tile = Tile{Row: i, Column: j, ColorValue: 0, Display: "X", Blocked: true}
 			}
 			tiles[key] = tile
@@ -517,7 +517,7 @@ func (g *Grid) ClearRow(row int) {
 
 func (g Grid) IsRowFull(row int) bool {
 	for i := 1; i < g.Width-1; i++ {
-		if !g.Tiles[GetCoordinates(row, i)].Blocked {
+		if !g.Tiles[GetCoordinates(row, i)].Blocked || g.Tiles[GetCoordinates(row, i)].Display == "X" {
 			return false
 		}
 	}

@@ -7,6 +7,9 @@ type MoveMessage struct {
 }
 
 type GameStateMessage struct {
-	Grid       entities.Grid `json:"grid"`
-	IsGameOver bool          `json:"isGameOver"`
+	Grid         entities.Grid `json:"grid"`
+	Level        int           `json:"level"`
+	LinesCleared int           `json:"linesCleared"`
+	Score        int           `json:"score"`
+	IsGameOver   bool          `json:"isGameOver"`
 }
