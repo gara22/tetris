@@ -67,3 +67,26 @@ func (h *HTTPHandler) NewTetrisGame(ctx *gin.Context) {
 		"gameId":  gameId,
 	})
 }
+
+// func (h *HTTPHandler) JoinGame(ctx *gin.Context) {
+// 	id := ctx.Query("id")
+// 	if id == "" {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{
+// 			"error": "game id is required",
+// 		})
+// 		return
+// 	}
+
+// 	err := h.svc.JoinGame(id)
+
+// 	if err != nil {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{
+// 			"error": err,
+// 		})
+// 		return
+// 	}
+
+// 	ctx.JSON(http.StatusOK, gin.H{
+// 		"message": "Game joined",
+// 	})
+// }

@@ -6,18 +6,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gara22/tetris/entities"
 	"github.com/gara22/tetris/messages"
 	socket "github.com/gara22/tetris/websocket"
 )
 
 type TetrisGame struct {
-	Grid            entities.Grid `json:"grid"`
+	Grid            entities.Grid
 	ActiveShape     entities.Shape
 	Ticker          *time.Ticker
 	Hub             socket.Hub
-	IsGameOver      bool `json:"isGameOver"`
+	IsGameOver      bool
 	GameOverChannel chan bool
 }
 
@@ -44,6 +43,11 @@ func NewTetrisGame(hub *socket.Hub, gameOverChannel chan bool) TetrisGame {
 func (t *TetrisGame) StartGame() {
 	fmt.Println("start game")
 	t.ActiveShape = entities.GenerateRandomShape()
+	// publish initial game state
+	err := t.PublishGameState()
+	if err != nil {
+		fmt.Println("Error publishing game state")
+	}
 	// setup a ticker to move the shape down every second
 	msg := t.Hub.ReadMessage()
 
@@ -71,24 +75,16 @@ func (t *TetrisGame) StartGame() {
 
 				// game.Move()
 
-				gameStateMessage := messages.GameStateMessage{
-					Grid:       game.GetState(),
-					IsGameOver: game.IsGameOver,
-				}
-
-				bytes, err := json.Marshal(gameStateMessage)
+				err = t.PublishGameState()
 				if err != nil {
-					fmt.Println("Error marshalling grid")
-					continue
+					fmt.Println("Error publishing game state")
 				}
-				t.Hub.PublishMessage(bytes)
 			}
 		}
 	}()
 }
 
 func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
-	spew.Dump(t.ActiveShape)
 	newShape, err := t.calculateNewShape(params, t.ActiveShape)
 	// spew.Dump(t.ActiveShape)
 	if err != nil && err.Error() == "Shape is stuck" {
@@ -103,7 +99,6 @@ func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
 			return t, errors.New("Game over")
 		}
 		t.Grid.RenderShape(t.ActiveShape)
-		spew.Dump(t.ActiveShape)
 		t.Grid.Print()
 		return t, nil
 		// spew.Dump(t.Grid)
@@ -162,6 +157,21 @@ func (t *TetrisGame) checkForFullRows() {
 			t.Grid.ClearRow(row)
 		}
 	}
+}
+
+func (t *TetrisGame) PublishGameState() error {
+	gameStateMessage := messages.GameStateMessage{
+		Grid:       t.GetState(),
+		IsGameOver: t.IsGameOver,
+	}
+
+	bytes, err := json.Marshal(gameStateMessage)
+	if err != nil {
+		fmt.Println("Error marshalling grid")
+		return err
+	}
+	t.Hub.PublishMessage(bytes)
+	return nil
 }
 
 func (t *TetrisGame) EndGame() {
