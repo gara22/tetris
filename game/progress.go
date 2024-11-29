@@ -3,10 +3,11 @@ package game
 import "time"
 
 type Progress struct {
-	Level        int
-	LinesCleared int
-	Score        int
-	Ticker       *time.Ticker
+	Level          int
+	LinesCleared   int
+	Score          int
+	Ticker         *time.Ticker
+	TickerDuration time.Duration
 }
 
 func (p *Progress) AddLinesCleared(rows int) {
@@ -47,7 +48,9 @@ func (p *Progress) BumpLevel() {
 	newLevel := p.Level + 1
 	p.Level = newLevel
 	p.Ticker.Stop()
-	p.Ticker = time.NewTicker(calculateNextTicker(newLevel))
+	newDuration := calculateNextTicker(newLevel)
+	p.Ticker = time.NewTicker(newDuration)
+	p.TickerDuration = newDuration
 }
 
 func calculateNextTicker(level int) time.Duration {

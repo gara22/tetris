@@ -16,6 +16,7 @@ type TetrisGame struct {
 	ActiveShape     entities.Shape
 	Hub             socket.Hub
 	IsGameOver      bool
+	IsGamePaused    bool
 	GameOverChannel chan bool
 	Progress        Progress
 }
@@ -36,7 +37,7 @@ func NewTetrisGame(hub *socket.Hub, gameOverChannel chan bool) TetrisGame {
 		ActiveShape:     entities.Shape{},
 		Hub:             *hub,
 		GameOverChannel: gameOverChannel,
-		Progress:        Progress{Level: 1, LinesCleared: 0, Score: 0, Ticker: nil},
+		Progress:        Progress{Level: 1, LinesCleared: 0, Score: 0, Ticker: nil, TickerDuration: 1 * time.Second},
 	}
 }
 
@@ -52,7 +53,7 @@ func (t *TetrisGame) StartGame() {
 	msg := t.Hub.ReadMessage()
 
 	go func() {
-		t.Progress.Ticker = time.NewTicker(1 * time.Second)
+		t.Progress.Ticker = time.NewTicker(t.Progress.TickerDuration)
 		for {
 			select {
 			case <-t.Progress.Ticker.C:
@@ -67,7 +68,7 @@ func (t *TetrisGame) StartGame() {
 					fmt.Println("Error handling move")
 				}
 			case m := <-msg:
-				err := t.handleMove(m)
+				err = t.handleMessage(m)
 				if err != nil {
 					fmt.Println("Error handling move")
 				}
@@ -77,6 +78,9 @@ func (t *TetrisGame) StartGame() {
 }
 
 func (t *TetrisGame) handleMove(messageBytes []byte) error {
+	if t.IsGamePaused {
+		return errors.New("Game is paused")
+	}
 	var message messages.MoveMessage
 	err := json.Unmarshal(messageBytes, &message)
 	if err != nil {
@@ -103,6 +107,39 @@ func (t *TetrisGame) handleMove(messageBytes []byte) error {
 		return errors.New("Error publishing game state")
 	}
 	return nil
+}
+
+func (t *TetrisGame) handlePauseGame() error {
+	t.Progress.Ticker.Stop()
+	t.IsGamePaused = true
+	err := t.PublishGameState()
+	return err
+}
+
+func (t *TetrisGame) handleResumeGame() error {
+	t.Progress.Ticker = time.NewTicker(t.Progress.TickerDuration)
+	t.IsGamePaused = false
+	err := t.PublishGameState()
+	return err
+}
+
+func (t *TetrisGame) handleMessage(data []byte) error {
+	var msg messages.IncomingMessage
+	err := json.Unmarshal(data, &msg)
+	if err != nil {
+		return fmt.Errorf("Error unmarshalling JSON:", err)
+	}
+
+	switch msg.Type {
+	case "move":
+		return t.handleMove(data)
+	case "pause":
+		return t.handlePauseGame()
+	case "resume":
+		return t.handleResumeGame()
+	default:
+		return fmt.Errorf("Unknown message type:", msg.Type)
+	}
 }
 
 func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
@@ -191,6 +228,7 @@ func (t *TetrisGame) PublishGameState() error {
 		Level:        t.Progress.Level,
 		LinesCleared: t.Progress.LinesCleared,
 		Score:        t.Progress.Score,
+		IsGamePaused: t.IsGamePaused,
 	}
 
 	bytes, err := json.Marshal(gameStateMessage)
