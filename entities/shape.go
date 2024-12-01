@@ -20,7 +20,7 @@ type Tile struct {
 
 type Shape struct {
 	Tiles    []Tile
-	kind     string
+	Kind     string
 	Rotation int
 }
 
@@ -121,7 +121,7 @@ func NewShape(kind string) Shape {
 		}
 
 	}
-	shape.kind = kind
+	shape.Kind = kind
 	return shape
 }
 
@@ -153,7 +153,7 @@ func (s Shape) Block() Shape {
 func (s Shape) Clone() Shape {
 	newShape := Shape{}
 	newShape.Tiles = slices.Clone(s.Tiles)
-	newShape.kind = s.kind
+	newShape.Kind = s.Kind
 	newShape.Rotation = s.Rotation
 	return newShape
 }
@@ -162,10 +162,10 @@ func (s Shape) Rotate() Shape {
 	fmt.Println("Rotating")
 	newShape := Shape{}
 	newShape.Tiles = slices.Clone(s.Tiles)
-	newShape.kind = s.kind
+	newShape.Kind = s.Kind
 	newShape.Rotation = s.Rotation
 
-	switch s.kind {
+	switch s.Kind {
 	case "T":
 		switch s.Rotation {
 		case 0:

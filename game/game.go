@@ -19,6 +19,7 @@ type TetrisGame struct {
 	IsGamePaused    bool
 	GameOverChannel chan bool
 	Progress        Progress
+	NextShape       entities.Shape
 }
 
 var (
@@ -44,11 +45,7 @@ func NewTetrisGame(hub *socket.Hub, gameOverChannel chan bool) TetrisGame {
 func (t *TetrisGame) StartGame() {
 	fmt.Println("start game")
 	t.ActiveShape = entities.GenerateRandomShape()
-	// publish initial game state
-	err := t.PublishGameState()
-	if err != nil {
-		fmt.Println("Error publishing game state")
-	}
+	t.NextShape = entities.GenerateRandomShape()
 	// setup a ticker to move the shape down every second
 	msg := t.Hub.ReadMessage()
 
@@ -68,7 +65,7 @@ func (t *TetrisGame) StartGame() {
 					fmt.Println("Error handling move")
 				}
 			case m := <-msg:
-				err = t.handleMessage(m)
+				err := t.handleMessage(m)
 				if err != nil {
 					fmt.Println("Error handling move")
 				}
@@ -101,6 +98,8 @@ func (t *TetrisGame) handleMove(messageBytes []byte) error {
 	t.ActiveShape = game.ActiveShape
 	t.IsGameOver = game.IsGameOver
 	t.Progress = game.Progress
+	t.NextShape = game.NextShape
+	t.IsGamePaused = game.IsGamePaused
 
 	err = t.PublishGameState()
 	if err != nil {
@@ -150,7 +149,8 @@ func (t TetrisGame) Move(params MoveParams) (TetrisGame, error) {
 		newShape = t.ActiveShape.Block()
 		t.Grid.RenderShape(newShape)
 
-		t.ActiveShape = entities.GenerateRandomShape()
+		t.getNextShape()
+
 		// TODO: do we need to render here?
 		t.checkForFullRows()
 		if t.isGameOver() {
@@ -221,6 +221,11 @@ func (t *TetrisGame) checkForFullRows() {
 	}
 }
 
+func (t *TetrisGame) getNextShape() {
+	t.ActiveShape = t.NextShape
+	t.NextShape = entities.GenerateRandomShape()
+}
+
 func (t *TetrisGame) PublishGameState() error {
 	gameStateMessage := messages.GameStateMessage{
 		Grid:         t.GetState(),
@@ -229,6 +234,7 @@ func (t *TetrisGame) PublishGameState() error {
 		LinesCleared: t.Progress.LinesCleared,
 		Score:        t.Progress.Score,
 		IsGamePaused: t.IsGamePaused,
+		NextShape:    t.NextShape.Kind,
 	}
 
 	bytes, err := json.Marshal(gameStateMessage)

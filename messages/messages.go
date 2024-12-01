@@ -14,6 +14,7 @@ type GameStateMessage struct {
 	Score        int           `json:"score"`
 	IsGameOver   bool          `json:"isGameOver"`
 	IsGamePaused bool          `json:"isGamePaused"`
+	NextShape    string        `json:"nextShape"`
 }
 
 type IncomingMessage struct {
