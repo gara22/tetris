@@ -76,48 +76,48 @@ func NewShape(kind string) Shape {
 		// X R X 0
 		// 0 X 0 0
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "T0", Color: Yellow},
-			{Row: 1, Column: 4, Display: "T1", IsFixed: true, Color: Yellow},
-			{Row: 1, Column: 5, Display: "T2", Color: Yellow},
-			{Row: 2, Column: 4, Display: "T3", Color: Yellow},
+			{Row: 1, Column: 3, Display: "T", Color: Yellow},
+			{Row: 1, Column: 4, Display: "T", IsFixed: true, Color: Yellow},
+			{Row: 1, Column: 5, Display: "T", Color: Yellow},
+			{Row: 2, Column: 4, Display: "T", Color: Yellow},
 		}
 	case "L1":
 		// X R X 0
 		// X 0 0 0
 
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "L10", Color: Cyan},
-			{Row: 1, Column: 4, Display: "L11", IsFixed: true, Color: Cyan},
-			{Row: 1, Column: 5, Display: "L12", Color: Cyan},
-			{Row: 2, Column: 3, Display: "L13", Color: Cyan},
+			{Row: 1, Column: 3, Display: "L1", Color: Cyan},
+			{Row: 1, Column: 4, Display: "L1", IsFixed: true, Color: Cyan},
+			{Row: 1, Column: 5, Display: "L1", Color: Cyan},
+			{Row: 2, Column: 3, Display: "L1", Color: Cyan},
 		}
 
 	case "L2":
 		// X 0 0 0
 		// X R X 0
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "L20", Color: Cyan},
-			{Row: 1, Column: 4, Display: "L21", IsFixed: true, Color: Cyan},
-			{Row: 1, Column: 5, Display: "L22", Color: Cyan},
-			{Row: 2, Column: 5, Display: "L23", Color: Cyan},
+			{Row: 1, Column: 3, Display: "L2", Color: Cyan},
+			{Row: 1, Column: 4, Display: "L2", IsFixed: true, Color: Cyan},
+			{Row: 1, Column: 5, Display: "L2", Color: Cyan},
+			{Row: 2, Column: 5, Display: "L2", Color: Cyan},
 		}
 	case "Z1":
 		// 0 X X 0
 		// X R 0 0
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 3, Display: "Z10", Color: Magenta},
-			{Row: 1, Column: 4, Display: "Z11", IsFixed: true, Color: Magenta},
-			{Row: 2, Column: 4, Display: "Z12", Color: Magenta},
-			{Row: 2, Column: 5, Display: "Z13", Color: Magenta},
+			{Row: 1, Column: 3, Display: "Z1", Color: Magenta},
+			{Row: 1, Column: 4, Display: "Z1", IsFixed: true, Color: Magenta},
+			{Row: 2, Column: 4, Display: "Z1", Color: Magenta},
+			{Row: 2, Column: 5, Display: "Z1", Color: Magenta},
 		}
 	case "Z2":
 		// X X 0 0
 		// 0 R X X
 		shape.Tiles = []Tile{
-			{Row: 1, Column: 4, Display: "Z20", Color: Magenta},
-			{Row: 1, Column: 5, Display: "Z21", IsFixed: true, Color: Magenta},
-			{Row: 2, Column: 3, Display: "Z22", Color: Magenta},
-			{Row: 2, Column: 4, Display: "Z23", Color: Magenta},
+			{Row: 1, Column: 4, Display: "Z2", Color: Magenta},
+			{Row: 1, Column: 5, Display: "Z2", IsFixed: true, Color: Magenta},
+			{Row: 2, Column: 3, Display: "Z2", Color: Magenta},
+			{Row: 2, Column: 4, Display: "Z2", Color: Magenta},
 		}
 
 	}
