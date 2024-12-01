@@ -41,7 +41,9 @@ func main() {
 			return
 		}
 
-		if appService.Games[id] == nil {
+		game := appService.Games[id]
+
+		if game == nil {
 			spew.Dump("game not found")
 			c.JSON(400, gin.H{
 				"error": "game not found",
@@ -50,6 +52,8 @@ func main() {
 		}
 
 		socket.ServeWs(&appService.Games[id].Hub, c.Writer, c.Request)
+		game.PublishGameState()
+
 	})
 	router.Run("localhost:8080")
 
