@@ -31,6 +31,12 @@ func main() {
 
 	handler := handler.NewHTTPHandler(*appService)
 	router.POST("/new-game", handler.NewTetrisGame)
+	router.GET("/hello", func(c *gin.Context) {
+		spew.Dump("hello")
+		c.JSON(200, gin.H{
+			"message": "hello",
+		})
+	})
 	router.GET("/ws", func(c *gin.Context) {
 		// TODO: validate game id
 		id := c.Query("id")
@@ -55,6 +61,6 @@ func main() {
 		game.PublishGameState()
 
 	})
-	router.Run("localhost:8080")
+	router.Run(":8080")
 
 }
