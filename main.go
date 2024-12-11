@@ -21,7 +21,8 @@ func main() {
 
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},                   // Allow localhost for front-end development (adjust port if needed)
+		// TODO: get this from env
+		AllowOrigins:     []string{"http://localhost:5173", "http://husi.lol", "http://goblin.rest"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Allowed HTTP methods
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
