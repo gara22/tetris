@@ -22,13 +22,14 @@ func main() {
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
 		// TODO: get this from env
-		AllowOrigins:     []string{"http://husi.lol", "http://goblin.rest"},
+		// AllowOrigins:     []string{"http://husi.lol", "http://goblin.rest"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Allowed HTTP methods
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 		AllowOriginFunc: func(origin string) bool {
+			spew.Dump(origin)
 			return origin == "http://husi.lol" || origin == "http://goblin.rest"
 		},
 	}))
