@@ -260,7 +260,7 @@ func (t *TetrisGame) ToPersistedGame() PersistedGame {
 		//TODO: add new endpoint for player
 		Player:       "",
 		Level:        t.Progress.Level,
-		Score:        t.Progress.Level,
+		Score:        t.Progress.Score,
 		LinesCleared: t.Progress.LinesCleared,
 	}
 }
