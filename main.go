@@ -6,14 +6,16 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	app_service "github.com/gara22/tetris/app-service"
 	handler "github.com/gara22/tetris/http"
+	"github.com/gara22/tetris/repository"
 	socket "github.com/gara22/tetris/websocket"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-
-	appService := app_service.NewAppService()
+	// TODO: get path from env
+	repo := repository.New("./games.json")
+	appService := app_service.NewAppService(&repo)
 	// tetrisGame := game.NewTetrisGame(*hub)
 	// tetrisGame.StartGame()
 

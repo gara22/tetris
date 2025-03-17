@@ -22,6 +22,14 @@ type TetrisGame struct {
 	NextShape       entities.Shape
 }
 
+type PersistedGame struct {
+	ID           string `json:"id"`
+	Player       string `json:"player,omitempty"`
+	Level        int    `json:"level"`
+	Score        int    `json:"score"`
+	LinesCleared int    `json:"linesCleared"`
+}
+
 var (
 	// Make sure that TetrisGame implements the Game interface
 	_ Game = (*TetrisGame)(nil)
@@ -87,7 +95,7 @@ func (t *TetrisGame) handleMove(messageBytes []byte) error {
 
 	game, err := t.Move(MoveParams{Direction: message.Direction})
 	if err != nil {
-		fmt.Println("Error moving shape: %s", err)
+		fmt.Println("Error moving shape: %w", err)
 		if err.Error() == "Game over" {
 			t.EndGame()
 			game.IsGameOver = true
@@ -244,6 +252,17 @@ func (t *TetrisGame) PublishGameState() error {
 	}
 	t.Hub.PublishMessage(bytes)
 	return nil
+}
+func (t *TetrisGame) ToPersistedGame() PersistedGame {
+	// spew.Dump(t)
+	return PersistedGame{
+		ID: t.Hub.ID,
+		//TODO: add new endpoint for player
+		Player:       "",
+		Level:        t.Progress.Level,
+		Score:        t.Progress.Level,
+		LinesCleared: t.Progress.LinesCleared,
+	}
 }
 
 func (t *TetrisGame) EndGame() {

@@ -1,18 +1,22 @@
 package app_service
 
 import (
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gara22/tetris/game"
+	"github.com/gara22/tetris/repository"
 	socket "github.com/gara22/tetris/websocket"
 	"github.com/google/uuid"
 )
 
 type AppService struct {
-	Games map[string]*game.TetrisGame
+	Games      map[string]*game.TetrisGame
+	Repository repository.Repository
 }
 
-func NewAppService() *AppService {
+func NewAppService(repository repository.Repository) *AppService {
 	return &AppService{
-		Games: make(map[string]*game.TetrisGame),
+		Games:      make(map[string]*game.TetrisGame),
+		Repository: repository,
 	}
 }
 
@@ -23,6 +27,7 @@ func (a *AppService) NewGame() (string, error) {
 	}
 
 	hub := socket.NewHub()
+	hub.ID = id.String()
 
 	go hub.Run()
 
@@ -37,6 +42,10 @@ func (a *AppService) NewGame() (string, error) {
 
 	go func() {
 		<-gameOverChannel
+		err := a.Repository.SaveGame(a.Games[id.String()].ToPersistedGame())
+		if err != nil {
+			spew.Dump(err)
+		}
 		delete(a.Games, id.String())
 	}()
 
