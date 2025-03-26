@@ -39,6 +39,7 @@ func main() {
 	handler := handler.NewHTTPHandler(*appService)
 	router.POST("/new-game", handler.NewTetrisGame)
 	router.POST("/add-score", handler.AddScore)
+	router.GET("/scores", handler.GetHighScores)
 	router.GET("/hello", func(c *gin.Context) {
 		spew.Dump("hello")
 		c.JSON(200, gin.H{

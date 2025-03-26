@@ -60,3 +60,14 @@ func (h *HTTPHandler) AddScore(ctx *gin.Context) {
 		"message": "Score added",
 	})
 }
+
+func (h *HTTPHandler) GetHighScores(ctx *gin.Context) {
+	scores, err := h.svc.GetHighScores()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, scores)
+}

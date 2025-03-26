@@ -82,3 +82,7 @@ func (a *AppService) AddScore(gameId string, playerName string) error {
 
 	return nil
 }
+
+func (a *AppService) GetHighScores() ([]game.HighScore, error) {
+	return a.Repository.GetHighScores()
+}
