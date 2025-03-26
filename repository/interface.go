@@ -6,4 +6,6 @@ type Repository interface {
 	SaveGame(game.PersistedGame) error
 	GetGames() ([]game.PersistedGame, error)
 	GetByID(id string) (game.PersistedGame, error)
+	SaveHighScore(game.HighScore) error
+	GetHighScores() ([]game.HighScore, error)
 }

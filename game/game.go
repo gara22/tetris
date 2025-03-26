@@ -30,6 +30,11 @@ type PersistedGame struct {
 	LinesCleared int    `json:"linesCleared"`
 }
 
+type HighScore struct {
+	Player string `json:"player"`
+	Score  int    `json:"score"`
+}
+
 var (
 	// Make sure that TetrisGame implements the Game interface
 	_ Game = (*TetrisGame)(nil)

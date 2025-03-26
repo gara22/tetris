@@ -14,7 +14,7 @@ import (
 
 func main() {
 	// TODO: get path from env
-	repo := repository.New("./games.json")
+	repo := repository.New()
 	appService := app_service.NewAppService(&repo)
 	// tetrisGame := game.NewTetrisGame(*hub)
 	// tetrisGame.StartGame()

@@ -55,17 +55,27 @@ func (a *AppService) NewGame() (string, error) {
 }
 
 func (a *AppService) AddScore(gameId string, playerName string) error {
-	game, err := a.Repository.GetByID(gameId)
+	retrievedGame, err := a.Repository.GetByID(gameId)
 	if err != nil {
 		return err
 	}
 
-	if game.Player != "" {
+	if retrievedGame.Player != "" {
 		return fmt.Errorf("player already set for this game")
 	}
-	game.Player = playerName
+	retrievedGame.Player = playerName
 
-	err = a.Repository.SaveGame(game)
+	err = a.Repository.SaveGame(retrievedGame)
+	if err != nil {
+		return err
+	}
+
+	highScore := game.HighScore{
+		Player: playerName,
+		Score:  retrievedGame.Score,
+	}
+
+	err = a.Repository.SaveHighScore(highScore)
 	if err != nil {
 		return err
 	}
