@@ -28,6 +28,7 @@ type PersistedGame struct {
 	Level        int    `json:"level"`
 	Score        int    `json:"score"`
 	LinesCleared int    `json:"linesCleared"`
+	CreatedAt    string `json:"createdAt"`
 }
 
 type HighScore struct {
@@ -261,12 +262,12 @@ func (t *TetrisGame) PublishGameState() error {
 func (t *TetrisGame) ToPersistedGame() PersistedGame {
 	// spew.Dump(t)
 	return PersistedGame{
-		ID: t.Hub.ID,
-		//TODO: add new endpoint for player
+		ID:           t.Hub.ID,
 		Player:       "",
 		Level:        t.Progress.Level,
 		Score:        t.Progress.Score,
 		LinesCleared: t.Progress.LinesCleared,
+		CreatedAt:    time.Now().UTC().Format(time.RFC3339),
 	}
 }
 
