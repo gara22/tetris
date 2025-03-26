@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	app_service "github.com/gara22/tetris/app-service"
+	"github.com/gara22/tetris/messages"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type HTTPHandler struct {
@@ -16,43 +18,6 @@ func NewHTTPHandler(appService app_service.AppService) *HTTPHandler {
 		svc: appService,
 	}
 }
-
-// func (h *HTTPHandler) Move(ctx *gin.Context) {
-// 	var message messages.MoveMessage
-// 	if err := ctx.ShouldBindJSON(&message); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{
-// 			"Error": err,
-// 		})
-
-// 		return
-// 	}
-
-// 	moveParams := game.MoveParams{
-// 		Direction: message.Direction,
-// 	}
-
-// 	game, err := h.svc.Move(moveParams)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{
-// 			"error": err,
-// 		})
-// 		return
-// 	}
-
-// 	// gridBytes, err := json.Marshal(game.Grid)
-// 	// if err != nil {
-// 	// 	ctx.JSON(http.StatusBadRequest, gin.H{
-// 	// 		"error": err,
-// 	// 	})
-// 	// 	return
-// 	// }
-
-// 	ctx.JSON(http.StatusCreated, game.Grid)
-// }
-
-// func (h *HTTPHandler) GetState(ctx *gin.Context) {
-// 	ctx.JSON(http.StatusOK, h.svc.GetState())
-// }
 
 func (h *HTTPHandler) NewTetrisGame(ctx *gin.Context) {
 	gameId, err := h.svc.NewGame()
@@ -68,25 +33,30 @@ func (h *HTTPHandler) NewTetrisGame(ctx *gin.Context) {
 	})
 }
 
-// func (h *HTTPHandler) JoinGame(ctx *gin.Context) {
-// 	id := ctx.Query("id")
-// 	if id == "" {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{
-// 			"error": "game id is required",
-// 		})
-// 		return
-// 	}
+func (h *HTTPHandler) AddScore(ctx *gin.Context) {
+	var message messages.SavePlayerScoreMessage
+	if err := ctx.ShouldBindJSON(&message); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"Error": err,
+		})
+		return
+	}
+	validator := validator.New()
+	if err := validator.Struct(message); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"Error": "Invalid request",
+		})
+		return
+	}
 
-// 	err := h.svc.JoinGame(id)
-
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{
-// 			"error": err,
-// 		})
-// 		return
-// 	}
-
-// 	ctx.JSON(http.StatusOK, gin.H{
-// 		"message": "Game joined",
-// 	})
-// }
+	err := h.svc.AddScore(message.GameId, message.PlayerName)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Score added",
+	})
+}

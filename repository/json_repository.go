@@ -36,7 +36,19 @@ func (r *JsonRepository) SaveGame(game game.PersistedGame) error {
 		return fmt.Errorf("failed loading games")
 	}
 
-	existing = append(existing, game)
+	var found bool
+
+	for i, g := range existing {
+		if g.ID == game.ID {
+			existing[i] = game
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		existing = append(existing, game)
+	}
 
 	bytes, err := json.Marshal(existing)
 	if err != nil {
@@ -51,8 +63,29 @@ func (r *JsonRepository) SaveGame(game game.PersistedGame) error {
 	spew.Dump(bytes)
 	return nil
 }
+
 func (r *JsonRepository) GetGames() ([]game.PersistedGame, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	return r.loadGames()
+}
+
+func (r *JsonRepository) GetByID(id string) (game.PersistedGame, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	games, err := r.loadGames()
+	if err != nil {
+		return game.PersistedGame{}, fmt.Errorf("failed loading games")
+	}
+
+	for _, g := range games {
+		if g.ID == id {
+			return g, nil
+		}
+	}
+
+	return game.PersistedGame{}, fmt.Errorf("game not found")
 }
 
 // LoadGames loads all games from file

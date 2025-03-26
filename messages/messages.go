@@ -20,3 +20,8 @@ type GameStateMessage struct {
 type IncomingMessage struct {
 	Type string `json:"type"`
 }
+
+type SavePlayerScoreMessage struct {
+	PlayerName string `json:"playerName" validate:"required"`
+	GameId     string `json:"gameId" validate:"required"`
+}

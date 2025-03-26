@@ -1,6 +1,8 @@
 package app_service
 
 import (
+	"fmt"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gara22/tetris/game"
 	"github.com/gara22/tetris/repository"
@@ -50,4 +52,23 @@ func (a *AppService) NewGame() (string, error) {
 	}()
 
 	return id.String(), nil
+}
+
+func (a *AppService) AddScore(gameId string, playerName string) error {
+	game, err := a.Repository.GetByID(gameId)
+	if err != nil {
+		return err
+	}
+
+	if game.Player != "" {
+		return fmt.Errorf("player already set for this game")
+	}
+	game.Player = playerName
+
+	err = a.Repository.SaveGame(game)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
