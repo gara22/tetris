@@ -32,7 +32,7 @@ func main() {
 		MaxAge:           12 * time.Hour,
 		AllowOriginFunc: func(origin string) bool {
 			spew.Dump(origin)
-			return origin == "https://husi.lol" || origin == "https://goblin.rest" || origin == "http://localhost:5173"
+			return origin == "https://9oblin.com" || origin == "http://localhost:5173"
 		},
 	}))
 
