@@ -7,7 +7,6 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gara22/tetris/game"
 )
 
@@ -64,7 +63,6 @@ func (r *JsonRepository) SaveGame(game game.PersistedGame) error {
 		return fmt.Errorf("failed write to file %w", err)
 	}
 
-	spew.Dump(bytes)
 	return nil
 }
 
@@ -116,9 +114,8 @@ func (r *JsonRepository) SaveHighScore(highScore game.HighScore) error {
 			index = i
 			break
 		}
+		index = i + 1
 	}
-
-	spew.Dump(index)
 
 	// insert the new high score
 	highScores = slices.Insert(highScores, index, highScore)
